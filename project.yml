@@ -1,0 +1,32 @@
+# project.yml — XcodeGen config for Meter iOS
+#
+# With XcodeGen installed:
+#   cd meter_dd
+#   xcodegen generate
+#   open Meter.xcodeproj
+#
+# Then set your signing Team (Signing & Capabilities tab) and run on your iPhone.
+
+name: Meter
+options:
+  bundleIdPrefix: com.darius
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+targets:
+  Meter:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+      - path: Resources
+    info:
+      path: Info.plist
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: 1          # iPhone only
+        MARKETING_VERSION: "1.1"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.9"
