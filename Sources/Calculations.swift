@@ -53,7 +53,8 @@ enum Calculations {
                     r.gross += pay
                     r.net   += pay - miles * cpm
                     r.miles += miles
-                    r.mins  += o.mins ?? 0
+                    let tracked = (o.driveMin ?? 0) + (o.wait ?? 0) + (o.customerDriveMin ?? 0)
+                    r.mins += tracked > 0 ? tracked : (o.mins ?? 0)
                 }
             } else {
                 r.dec += 1

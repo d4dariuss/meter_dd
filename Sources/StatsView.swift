@@ -59,7 +59,7 @@ struct StatsView: View {
                     }
                     .padding(.horizontal, 16)
 
-                    Text("Meter v1.1 · native iOS · your data stays on this device")
+                    Text("Meter v2.3 · native iOS · your data stays on this device")
                         .font(.system(size: 12))
                         .foregroundColor(.mFaint)
                         .padding(28)
