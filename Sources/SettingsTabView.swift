@@ -73,7 +73,7 @@ struct SettingsTabView: View {
                     }
                     .padding(.top, 24)
 
-                    Text("Meter v2.4 · native iOS · your data stays on this device")
+                    Text("Meter v2.4.1 · native iOS · your data stays on this device")
                         .font(.system(size: 12))
                         .foregroundColor(.mFaint)
                         .padding(.top, 8)

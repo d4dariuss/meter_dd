@@ -48,7 +48,7 @@ struct LogView: View {
             .tutorialAnchor("log-header")
         }
         .sheet(item: $editingOffer) { offer in
-            OfferEditSheet(offer: offer, merchantZones: merchantZoneMap) { updated in
+            OfferEditSheet(offer: offer, merchants: allMerchants, zones: allZones, merchantZones: merchantZoneMap) { updated in
                 store.updateOffer(updated)
             }
         }
@@ -60,6 +60,14 @@ struct LogView: View {
             map[o.merchant] = o.zone
         }
         return map
+    }
+
+    private var allMerchants: [String] {
+        Array(Set(store.offers.compactMap { o in o.merchant.isEmpty ? nil : o.merchant })).sorted()
+    }
+
+    private var allZones: [String] {
+        Array(Set(store.offers.compactMap { o in o.zone.isEmpty ? nil : o.zone })).sorted()
     }
 
     // MARK: – Recently deleted banner
@@ -430,16 +438,33 @@ struct OfferRow: View {
 struct OfferEditSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State var offer: Offer
+    let merchants: [String]
+    let zones: [String]
     let merchantZones: [String: String]
     let onSave: (Offer) -> Void
 
-    @State private var payStr:       String = ""
-    @State private var miStr:        String = ""
-    @State private var minStr:       String = ""
-    @State private var fpStr:        String = ""
-    @State private var driveStr:     String = ""
-    @State private var waitStr:      String = ""
-    @State private var custDrStr:    String = ""
+    @State private var payStr:    String = ""
+    @State private var miStr:     String = ""
+    @State private var minStr:    String = ""
+    @State private var fpStr:     String = ""
+    @State private var driveStr:  String = ""
+    @State private var waitStr:   String = ""
+    @State private var custDrStr: String = ""
+
+    private enum FieldFocus: Hashable { case merchant, zone }
+    @FocusState private var focusedField: FieldFocus?
+
+    private var merchantSuggestions: [String] {
+        let q = offer.merchant.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return [] }
+        return merchants.filter { $0.lowercased().hasPrefix(q) && $0.lowercased() != q }.prefix(5).map { $0 }
+    }
+
+    private var zoneSuggestions: [String] {
+        let q = offer.zone.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return [] }
+        return zones.filter { $0.lowercased().hasPrefix(q) && $0.lowercased() != q }.prefix(5).map { $0 }
+    }
 
     var body: some View {
         NavigationStack {
@@ -447,9 +472,11 @@ struct OfferEditSheet: View {
                 VStack(spacing: 0) {
                     SectionHeader(title: "Offer details")
                     Card {
-                        editTextRow("Restaurant", text: $offer.merchant)
+                        autocompleteRow("Restaurant", text: $offer.merchant, focus: .merchant, suggestions: merchantSuggestions) {
+                            if offer.zone.isEmpty, let z = merchantZones[offer.merchant] { offer.zone = z }
+                        }
                         MLine()
-                        editTextRow("Zone", text: $offer.zone)
+                        autocompleteRow("Zone", text: $offer.zone, focus: .zone, suggestions: zoneSuggestions)
                         MLine()
                         editNumRow("Offer pay $",    str: $payStr)
                         MLine()
@@ -504,7 +531,6 @@ struct OfferEditSheet: View {
         driveStr  = offer.driveMin.map   { String(format: "%.1f", $0) } ?? ""
         waitStr   = offer.wait.map       { String(format: "%.1f", $0) } ?? ""
         custDrStr = offer.customerDriveMin.map { String(format: "%.1f", $0) } ?? ""
-        // Auto-fill zone from known merchants if this entry has none
         if offer.zone.isEmpty, let z = merchantZones[offer.merchant] {
             offer.zone = z
         }
@@ -518,23 +544,54 @@ struct OfferEditSheet: View {
         offer.driveMin         = Double(driveStr)
         offer.wait             = Double(waitStr)
         offer.customerDriveMin = Double(custDrStr)
-        if let p = offer.pay, let m = offer.miles, m > 0 {
-            offer.dpm = p / m
-        }
+        if let p = offer.pay, let m = offer.miles, m > 0 { offer.dpm = p / m }
         onSave(offer)
         dismiss()
     }
 
-    private func editTextRow(_ label: String, text: Binding<String>) -> some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 14)).foregroundColor(.mMuted)
-                .frame(width: 130, alignment: .leading)
-            TextField("", text: text)
-                .font(.system(size: 15)).foregroundColor(.mText)
-                .submitLabel(.next)
+    private func autocompleteRow(
+        _ label: String,
+        text: Binding<String>,
+        focus: FieldFocus,
+        suggestions: [String],
+        onSelect: (() -> Void)? = nil
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text(label)
+                    .font(.system(size: 14)).foregroundColor(.mMuted)
+                    .frame(width: 130, alignment: .leading)
+                TextField("", text: text)
+                    .font(.system(size: 15)).foregroundColor(.mText)
+                    .submitLabel(.next)
+                    .focused($focusedField, equals: focus)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+
+            if focusedField == focus && !suggestions.isEmpty {
+                Divider().background(Color.mLine)
+                ForEach(Array(suggestions.enumerated()), id: \.offset) { idx, s in
+                    Button {
+                        text.wrappedValue = s
+                        onSelect?()
+                        focusedField = nil
+                    } label: {
+                        HStack {
+                            Text(s)
+                                .font(.system(size: 13)).foregroundColor(.mAccent)
+                                .lineLimit(1)
+                            Spacer()
+                            Image(systemName: "arrow.up.left")
+                                .font(.system(size: 11)).foregroundColor(.mFaint)
+                        }
+                        .padding(.horizontal, 16).padding(.vertical, 9)
+                    }
+                    if idx < suggestions.count - 1 {
+                        Divider().background(Color.mLine)
+                    }
+                }
+            }
         }
-        .padding(.horizontal, 16).padding(.vertical, 12)
     }
 
     private func editNumRow(_ label: String, str: Binding<String>) -> some View {
