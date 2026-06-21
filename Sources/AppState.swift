@@ -345,16 +345,25 @@ class AppState: ObservableObject {
     }
 
     func importJSON(_ incoming: AppData) {
-        var ids  = Set(data.offers.map { $0.id })
-        var sids = Set(data.shifts.map { $0.id })
-
-        for o in incoming.offers where !ids.contains(o.id) {
-            data.offers.append(o)
-            ids.insert(o.id)
+        // Update existing records and add new ones (incoming wins on conflict)
+        var offerIndex = Dictionary(uniqueKeysWithValues: data.offers.enumerated().map { ($1.id, $0) })
+        for o in incoming.offers {
+            if let i = offerIndex[o.id] {
+                data.offers[i] = o   // overwrite with corrected data
+            } else {
+                data.offers.append(o)
+                offerIndex[o.id] = data.offers.count - 1
+            }
         }
-        for s in incoming.shifts where !sids.contains(s.id) {
-            data.shifts.append(s)
-            sids.insert(s.id)
+
+        var shiftIndex = Dictionary(uniqueKeysWithValues: data.shifts.enumerated().map { ($1.id, $0) })
+        for s in incoming.shifts {
+            if let i = shiftIndex[s.id] {
+                data.shifts[i] = s
+            } else {
+                data.shifts.append(s)
+                shiftIndex[s.id] = data.shifts.count - 1
+            }
         }
 
         // Merge merchant notes (incoming wins on conflict)
