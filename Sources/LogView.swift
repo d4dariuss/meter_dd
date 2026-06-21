@@ -40,18 +40,26 @@ struct LogView: View {
                 }
             }
             .background(Color.mBg.ignoresSafeArea())
+            .withKeyboardDoneButton()
             .navigationTitle("Log")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.mSurface, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .tutorialAnchor("log-header")
         }
-        .withKeyboardDoneButton()
         .sheet(item: $editingOffer) { offer in
-            OfferEditSheet(offer: offer) { updated in
+            OfferEditSheet(offer: offer, merchantZones: merchantZoneMap) { updated in
                 store.updateOffer(updated)
             }
         }
+    }
+
+    private var merchantZoneMap: [String: String] {
+        var map: [String: String] = [:]
+        for o in store.offers where !o.merchant.isEmpty && !o.zone.isEmpty {
+            map[o.merchant] = o.zone
+        }
+        return map
     }
 
     // MARK: – Recently deleted banner
@@ -147,6 +155,7 @@ struct OfferRow: View {
         .padding(12)
         .background(Color.mSurface)
         .cornerRadius(10)
+        .withKeyboardDoneButton()
         .onAppear {
             guard !initialized else { return }
             initialized   = true
@@ -296,23 +305,14 @@ struct OfferRow: View {
                         .padding(.horizontal, 10).padding(.vertical, 6)
                         .background(Color.mAccent.opacity(0.1)).cornerRadius(7)
                 }
-
-                HStack(spacing: 4) {
-                    TextField("min", text: $manualWaitStr)
-                        .keyboardType(.decimalPad)
-                        .font(.system(size: 12))
-                        .foregroundColor(.mText)
-                        .frame(width: 40)
-                    Text("wait min")
-                        .font(.system(size: 12)).foregroundColor(.mFaint)
-                    Button("Save") {
-                        if let w = Double(manualWaitStr) {
-                            var u = offer; u.wait = w
-                            store.updateOffer(u)
-                        }
-                    }
-                    .font(.system(size: 12)).foregroundColor(.mAccent)
+                Button("Mark done") {
+                    var u = offer; u.deliveredAt = Date()
+                    store.updateOffer(u)
                 }
+                .font(.system(size: 12))
+                .foregroundColor(.mFaint)
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(Color.mElev).cornerRadius(7)
 
             case 1:
                 if let ds = offer.driveStart {
@@ -320,9 +320,7 @@ struct OfferRow: View {
                 }
                 Button("At store") {
                     var u = offer
-                    if let ds = u.driveStart {
-                        u.driveMin = Date().timeIntervalSince(ds) / 60
-                    }
+                    if let ds = u.driveStart { u.driveMin = Date().timeIntervalSince(ds) / 60 }
                     u.waitStart = Date()
                     store.updateOffer(u)
                 }
@@ -330,6 +328,16 @@ struct OfferRow: View {
                 .foregroundColor(.mAmber)
                 .padding(.horizontal, 10).padding(.vertical, 6)
                 .background(Color.mAmber.opacity(0.1)).cornerRadius(7)
+                Button("Mark done") {
+                    var u = offer
+                    if let ds = u.driveStart { u.driveMin = Date().timeIntervalSince(ds) / 60 }
+                    u.deliveredAt = Date()
+                    store.updateOffer(u)
+                }
+                .font(.system(size: 12))
+                .foregroundColor(.mFaint)
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(Color.mElev).cornerRadius(7)
 
             case 2:
                 if let dm = offer.driveMin {
@@ -343,9 +351,7 @@ struct OfferRow: View {
                 }
                 Button("Got food") {
                     var u = offer
-                    if let ws = u.waitStart {
-                        u.wait = Date().timeIntervalSince(ws) / 60
-                    }
+                    if let ws = u.waitStart { u.wait = Date().timeIntervalSince(ws) / 60 }
                     u.customerDriveStart = Date()
                     store.updateOffer(u)
                 }
@@ -353,6 +359,16 @@ struct OfferRow: View {
                 .foregroundColor(.mGreen)
                 .padding(.horizontal, 10).padding(.vertical, 6)
                 .background(Color.mGreen.opacity(0.1)).cornerRadius(7)
+                Button("Mark done") {
+                    var u = offer
+                    if let ws = u.waitStart { u.wait = Date().timeIntervalSince(ws) / 60 }
+                    u.deliveredAt = Date()
+                    store.updateOffer(u)
+                }
+                .font(.system(size: 12))
+                .foregroundColor(.mFaint)
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(Color.mElev).cornerRadius(7)
 
             case 3:
                 if let dm = offer.driveMin {
@@ -414,6 +430,7 @@ struct OfferRow: View {
 struct OfferEditSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State var offer: Offer
+    let merchantZones: [String: String]
     let onSave: (Offer) -> Void
 
     @State private var payStr:       String = ""
@@ -459,6 +476,7 @@ struct OfferEditSheet: View {
             }
             .scrollDismissesKeyboard(.never)
             .background(Color.mBg.ignoresSafeArea())
+            .withKeyboardDoneButton()
             .navigationTitle("Edit Offer")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.mSurface, for: .navigationBar)
@@ -476,7 +494,6 @@ struct OfferEditSheet: View {
             }
             .onAppear { populateFields() }
         }
-        .withKeyboardDoneButton()
     }
 
     private func populateFields() {
@@ -487,6 +504,10 @@ struct OfferEditSheet: View {
         driveStr  = offer.driveMin.map   { String(format: "%.1f", $0) } ?? ""
         waitStr   = offer.wait.map       { String(format: "%.1f", $0) } ?? ""
         custDrStr = offer.customerDriveMin.map { String(format: "%.1f", $0) } ?? ""
+        // Auto-fill zone from known merchants if this entry has none
+        if offer.zone.isEmpty, let z = merchantZones[offer.merchant] {
+            offer.zone = z
+        }
     }
 
     private func saveAndDismiss() {

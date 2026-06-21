@@ -45,13 +45,6 @@ struct StatsView: View {
                     }
                     .padding(.horizontal, 16)
 
-                    // Hidden tip section
-                    SectionHeader(title: "Hidden tip check")
-                    Card {
-                        hiddenTipRows
-                    }
-                    .padding(.horizontal, 16)
-
                     // Your data section
                     SectionHeader(title: "Your data")
                     Card {
@@ -59,7 +52,7 @@ struct StatsView: View {
                     }
                     .padding(.horizontal, 16)
 
-                    Text("Meter v2.3 · native iOS · your data stays on this device")
+                    Text("Meter v2.4 · native iOS · your data stays on this device")
                         .font(.system(size: 12))
                         .foregroundColor(.mFaint)
                         .padding(28)

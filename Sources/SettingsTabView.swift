@@ -73,7 +73,7 @@ struct SettingsTabView: View {
                     }
                     .padding(.top, 24)
 
-                    Text("Meter v2.3 · native iOS · your data stays on this device")
+                    Text("Meter v2.4 · native iOS · your data stays on this device")
                         .font(.system(size: 12))
                         .foregroundColor(.mFaint)
                         .padding(.top, 8)
@@ -82,6 +82,7 @@ struct SettingsTabView: View {
                 }
             }
             .background(Color.mBg.ignoresSafeArea())
+            .withKeyboardDoneButton()
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.mSurface, for: .navigationBar)
@@ -100,7 +101,6 @@ struct SettingsTabView: View {
                 }
             }
         }
-        .withKeyboardDoneButton()
         .onAppear { s = store.settings }
     }
 

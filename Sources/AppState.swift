@@ -64,6 +64,12 @@ class AppState: ObservableObject {
     func updateOffer(_ o: Offer) {
         guard let i = data.offers.firstIndex(where: { $0.id == o.id }) else { return }
         data.offers[i] = o
+        // Propagate zone to all entries for the same merchant in one write
+        if !o.merchant.isEmpty && !o.zone.isEmpty {
+            for j in data.offers.indices where j != i && data.offers[j].merchant == o.merchant {
+                data.offers[j].zone = o.zone
+            }
+        }
         save()
     }
 

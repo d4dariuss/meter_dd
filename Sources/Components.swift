@@ -10,7 +10,6 @@ extension UIApplication {
 }
 
 extension View {
-    /// Adds a Done button above the keyboard for decimal-pad and number-pad fields.
     func withKeyboardDoneButton() -> some View {
         toolbar {
             ToolbarItemGroup(placement: .keyboard) {
@@ -18,6 +17,7 @@ extension View {
                 Button("Done") { UIApplication.shared.hideKeyboard() }
                     .foregroundColor(.mAccent)
                     .fontWeight(.semibold)
+                    .padding(.bottom, 6)
             }
         }
     }
