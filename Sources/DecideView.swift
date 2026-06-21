@@ -342,11 +342,8 @@ struct DecideView: View {
     private func inputCell(_ label: String, _ text: Binding<String>) -> some View {
         VStack(spacing: 4) {
             Text(label).font(.system(size: 11)).foregroundColor(.mFaint)
-            TextField("0", text: text)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.center)
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundColor(.mText)
+            NumericField(text: text, placeholder: "0", alignment: .center, fontSize: 22, fontWeight: .semibold)
+                .frame(height: 30)
         }
         .frame(maxWidth: .infinity)
     }
@@ -455,9 +452,8 @@ struct DecideView: View {
 
                     HStack(spacing: 6) {
                         Text("Odo:").font(.system(size: 12)).foregroundColor(.mFaint)
-                        TextField("mi", text: $odoStr)
-                            .keyboardType(.decimalPad)
-                            .font(.system(size: 13)).foregroundColor(.mText).frame(width: 70)
+                        NumericField(text: $odoStr, placeholder: "mi", alignment: .left, fontSize: 13)
+                            .frame(width: 70, height: 26)
                     }
                 }
             }

@@ -158,6 +158,134 @@ struct LiveTimer: View {
     }
 }
 
+// MARK: – Decimal pad field with built-in Done bar (string binding)
+
+struct NumericField: UIViewRepresentable {
+    @Binding var text: String
+    var placeholder: String = "—"
+    var alignment: NSTextAlignment = .right
+    var fontSize: CGFloat = 15
+    var fontWeight: UIFont.Weight = .regular
+    var onCommit: (() -> Void)? = nil
+
+    func makeUIView(context: Context) -> UITextField {
+        let tf = UITextField()
+        tf.keyboardType = .decimalPad
+        tf.text = text
+        tf.placeholder = placeholder
+        tf.textAlignment = alignment
+        tf.font = UIFont.systemFont(ofSize: fontSize, weight: fontWeight)
+        tf.textColor = UIColor(Color.mText)
+        tf.delegate = context.coordinator
+        tf.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        tf.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        tf.inputAccessoryView = context.coordinator.doneBar
+        return tf
+    }
+
+    func updateUIView(_ uiView: UITextField, context: Context) {
+        guard !uiView.isFirstResponder, uiView.text != text else { return }
+        uiView.text = text
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator($text, onCommit: onCommit) }
+
+    class Coordinator: NSObject, UITextFieldDelegate {
+        let text: Binding<String>
+        let onCommit: (() -> Void)?
+
+        init(_ text: Binding<String>, onCommit: (() -> Void)?) {
+            self.text = text; self.onCommit = onCommit
+        }
+
+        lazy var doneBar: UIToolbar = {
+            let bar = UIToolbar(); bar.sizeToFit(); bar.barStyle = .black
+            let space = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            let done  = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(doneTapped))
+            done.tintColor = UIColor(Color.mAccent)
+            bar.items = [space, done]; return bar
+        }()
+
+        @objc func doneTapped() {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
+
+        func textField(_ tf: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+            text.wrappedValue = ((tf.text ?? "") as NSString).replacingCharacters(in: range, with: string)
+            return true
+        }
+
+        func textFieldDidEndEditing(_ tf: UITextField) {
+            text.wrappedValue = tf.text ?? ""
+            onCommit?()
+        }
+    }
+}
+
+// MARK: – Decimal pad field with built-in Done bar (Double binding, for Settings)
+
+struct NumericValueField: UIViewRepresentable {
+    @Binding var value: Double
+    var decimals: Int = 2
+
+    func makeUIView(context: Context) -> UITextField {
+        let tf = UITextField()
+        tf.keyboardType = .decimalPad
+        tf.text = context.coordinator.fmt(value)
+        tf.textAlignment = .right
+        tf.font = UIFont.systemFont(ofSize: 15, weight: .medium)
+        tf.textColor = UIColor(Color.mText)
+        tf.delegate = context.coordinator
+        tf.inputAccessoryView = context.coordinator.doneBar
+        return tf
+    }
+
+    func updateUIView(_ uiView: UITextField, context: Context) {
+        guard !uiView.isFirstResponder else { return }
+        let f = context.coordinator.fmt(value)
+        if uiView.text != f { uiView.text = f }
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator($value, decimals: decimals) }
+
+    class Coordinator: NSObject, UITextFieldDelegate {
+        let value: Binding<Double>
+        let decimals: Int
+
+        init(_ value: Binding<Double>, decimals: Int) {
+            self.value = value; self.decimals = decimals
+        }
+
+        func fmt(_ v: Double) -> String { String(format: "%.\(decimals)f", v) }
+
+        lazy var doneBar: UIToolbar = {
+            let bar = UIToolbar(); bar.sizeToFit(); bar.barStyle = .black
+            let space = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+            let done  = UIBarButtonItem(title: "Done", style: .done, target: self, action: #selector(doneTapped))
+            done.tintColor = UIColor(Color.mAccent)
+            bar.items = [space, done]; return bar
+        }()
+
+        @objc func doneTapped() {
+            UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        }
+
+        func textField(_ tf: UITextField, shouldChangeCharactersIn range: NSRange, replacementString string: String) -> Bool {
+            let updated = ((tf.text ?? "") as NSString).replacingCharacters(in: range, with: string)
+            if let v = Double(updated) { value.wrappedValue = v }
+            return true
+        }
+
+        func textFieldDidEndEditing(_ tf: UITextField) {
+            if let v = Double(tf.text ?? "") {
+                value.wrappedValue = v
+            } else {
+                tf.text = fmt(value.wrappedValue)
+            }
+        }
+    }
+}
+
 // MARK: – GPS pill
 
 struct GpsPill: View {

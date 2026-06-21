@@ -82,7 +82,6 @@ struct SettingsTabView: View {
                 }
             }
             .background(Color.mBg.ignoresSafeArea())
-            .withKeyboardDoneButton()
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.mSurface, for: .navigationBar)
@@ -131,12 +130,8 @@ struct SettingsTabView: View {
                 .font(.system(size: 14))
                 .foregroundColor(.mMuted)
             Spacer()
-            TextField("", value: val, format: .number)
-                .keyboardType(.decimalPad)
-                .multilineTextAlignment(.trailing)
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.mText)
-                .frame(width: 90)
+            NumericValueField(value: val, decimals: decimals)
+                .frame(width: 90, height: 30)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)

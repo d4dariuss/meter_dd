@@ -163,7 +163,6 @@ struct OfferRow: View {
         .padding(12)
         .background(Color.mSurface)
         .cornerRadius(10)
-        .withKeyboardDoneButton()
         .onAppear {
             guard !initialized else { return }
             initialized   = true
@@ -254,12 +253,9 @@ struct OfferRow: View {
             Text("Final $")
                 .font(.system(size: 13))
                 .foregroundColor(.mMuted)
-            TextField("amount", text: $finalPayStr)
-                .keyboardType(.decimalPad)
-                .font(.system(size: 13))
-                .foregroundColor(.mText)
-                .frame(width: 70)
-                .onSubmit { saveFinalPay() }
+            NumericField(text: $finalPayStr, placeholder: "amount", alignment: .left,
+                             fontSize: 13, onCommit: saveFinalPay)
+                    .frame(width: 70, height: 28)
 
             Button("Save") { saveFinalPay() }
                 .font(.system(size: 12))
@@ -503,7 +499,6 @@ struct OfferEditSheet: View {
             }
             .scrollDismissesKeyboard(.never)
             .background(Color.mBg.ignoresSafeArea())
-            .withKeyboardDoneButton()
             .navigationTitle("Edit Offer")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.mSurface, for: .navigationBar)
@@ -599,11 +594,9 @@ struct OfferEditSheet: View {
             Text(label)
                 .font(.system(size: 14)).foregroundColor(.mMuted)
                 .frame(width: 130, alignment: .leading)
-            TextField("—", text: str)
-                .keyboardType(.decimalPad)
-                .font(.system(size: 15)).foregroundColor(.mText)
-                .multilineTextAlignment(.trailing)
+            NumericField(text: str)
+                .frame(height: 30)
         }
-        .padding(.horizontal, 16).padding(.vertical, 12)
+        .padding(.horizontal, 16).padding(.vertical, 10)
     }
 }
