@@ -8,31 +8,58 @@
 
 /* Begin PBXBuildFile section */
 		0270E495101627F07F38DEFD /* bridge.js in Resources */ = {isa = PBXBuildFile; fileRef = 55E719791DB19EC8F970052F /* bridge.js */; };
+		101E62F8F618D797DE7D8A79 /* SpotsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B94935B2AF95D0C01D28A16 /* SpotsView.swift */; };
+		1A6425EBA1B51B6757BE037A /* StatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A65E72176932BC41F4D9511B /* StatsView.swift */; };
 		1BDB74FCEE5A41AAEFA461B1 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 480D1466EE27E0ED9856830F /* ContentView.swift */; };
+		32A4AE7C16C0F15CB2C7BDCF /* SettingsTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67287F1B0E3AF78F5DADA94E /* SettingsTabView.swift */; };
+		3C7880EF18D619D869A71FB8 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDF5AA38D6F3892B5CE3FD5 /* Components.swift */; };
+		41337B78CB978A48FF231412 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFFD93D4794303DE4C12D9C1 /* Theme.swift */; };
 		6C6B21C52597C3483EB870BE /* LocationTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B265591EC8C616961E202E3 /* LocationTracker.swift */; };
+		78C2135CB854562C7540C15B /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D72A54E116EB0DBB027DE8 /* AppState.swift */; };
+		7AE0FB1E22D2B8B67169153B /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22F0C4AAF4A439963031D903 /* LogView.swift */; };
+		89F82DA08F4C6840AD173535 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70575D455AF60DD7C4697B2C /* Models.swift */; };
 		8B122D852662BF9EBB159D45 /* MeterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27412859649A7A8673A20DE7 /* MeterApp.swift */; };
-		A676D3259D3696A4F003F4BE /* WebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0F18E565F3779789A913D92 /* WebView.swift */; };
 		B5BE2042A97E7E79728FAA4F /* meter.html in Resources */ = {isa = PBXBuildFile; fileRef = B8D1B9A13E6642F2E63654C9 /* meter.html */; };
+		C37C87CF0E6A14C36C089221 /* DecideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B786D69E23A7BF0A634CFC0F /* DecideView.swift */; };
+		E5473839D957008F7F434DA2 /* Calculations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F61FF4A377F7943C8B3F294 /* Calculations.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		14D72A54E116EB0DBB027DE8 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		1F61FF4A377F7943C8B3F294 /* Calculations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Calculations.swift; sourceTree = "<group>"; };
+		22F0C4AAF4A439963031D903 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
 		27412859649A7A8673A20DE7 /* MeterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeterApp.swift; sourceTree = "<group>"; };
 		2B265591EC8C616961E202E3 /* LocationTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationTracker.swift; sourceTree = "<group>"; };
+		3B94935B2AF95D0C01D28A16 /* SpotsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotsView.swift; sourceTree = "<group>"; };
 		480D1466EE27E0ED9856830F /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		55E719791DB19EC8F970052F /* bridge.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = bridge.js; sourceTree = "<group>"; };
-		7744BD3B367383BC791FD38A /* Meter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Meter.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		67287F1B0E3AF78F5DADA94E /* SettingsTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTabView.swift; sourceTree = "<group>"; };
+		70575D455AF60DD7C4697B2C /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		7744BD3B367383BC791FD38A /* Meter.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Meter.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A65E72176932BC41F4D9511B /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
+		B786D69E23A7BF0A634CFC0F /* DecideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecideView.swift; sourceTree = "<group>"; };
 		B8D1B9A13E6642F2E63654C9 /* meter.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = meter.html; sourceTree = "<group>"; };
-		E0F18E565F3779789A913D92 /* WebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebView.swift; sourceTree = "<group>"; };
+		BFFD93D4794303DE4C12D9C1 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		CCDF5AA38D6F3892B5CE3FD5 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		5CA370D3D4A534A76ECBBE5C /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				14D72A54E116EB0DBB027DE8 /* AppState.swift */,
+				1F61FF4A377F7943C8B3F294 /* Calculations.swift */,
+				CCDF5AA38D6F3892B5CE3FD5 /* Components.swift */,
 				480D1466EE27E0ED9856830F /* ContentView.swift */,
+				B786D69E23A7BF0A634CFC0F /* DecideView.swift */,
 				2B265591EC8C616961E202E3 /* LocationTracker.swift */,
+				22F0C4AAF4A439963031D903 /* LogView.swift */,
 				27412859649A7A8673A20DE7 /* MeterApp.swift */,
-				E0F18E565F3779789A913D92 /* WebView.swift */,
+				70575D455AF60DD7C4697B2C /* Models.swift */,
+				67287F1B0E3AF78F5DADA94E /* SettingsTabView.swift */,
+				3B94935B2AF95D0C01D28A16 /* SpotsView.swift */,
+				A65E72176932BC41F4D9511B /* StatsView.swift */,
+				BFFD93D4794303DE4C12D9C1 /* Theme.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -92,6 +119,8 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
 			};
 			buildConfigurationList = 60694C2ABCC45452EE712CBD /* Build configuration list for PBXProject "Meter" */;
 			developmentRegion = en;
@@ -129,10 +158,19 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				78C2135CB854562C7540C15B /* AppState.swift in Sources */,
+				E5473839D957008F7F434DA2 /* Calculations.swift in Sources */,
+				3C7880EF18D619D869A71FB8 /* Components.swift in Sources */,
 				1BDB74FCEE5A41AAEFA461B1 /* ContentView.swift in Sources */,
+				C37C87CF0E6A14C36C089221 /* DecideView.swift in Sources */,
 				6C6B21C52597C3483EB870BE /* LocationTracker.swift in Sources */,
+				7AE0FB1E22D2B8B67169153B /* LogView.swift in Sources */,
 				8B122D852662BF9EBB159D45 /* MeterApp.swift in Sources */,
-				A676D3259D3696A4F003F4BE /* WebView.swift in Sources */,
+				89F82DA08F4C6840AD173535 /* Models.swift in Sources */,
+				32A4AE7C16C0F15CB2C7BDCF /* SettingsTabView.swift in Sources */,
+				101E62F8F618D797DE7D8A79 /* SpotsView.swift in Sources */,
+				1A6425EBA1B51B6757BE037A /* StatsView.swift in Sources */,
+				41337B78CB978A48FF231412 /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -207,8 +245,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = DJ9K6KTAVP;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -284,8 +321,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = DJ9K6KTAVP;
+				CURRENT_PROJECT_VERSION = 2;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

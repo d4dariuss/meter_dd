@@ -1,12 +1,3 @@
-# project.yml — XcodeGen config for Meter iOS
-#
-# With XcodeGen installed:
-#   cd meter_dd
-#   xcodegen generate
-#   open Meter.xcodeproj
-#
-# Then set your signing Team (Signing & Capabilities tab) and run on your iPhone.
-
 name: Meter
 options:
   bundleIdPrefix: com.darius
@@ -23,10 +14,20 @@ targets:
       - path: Resources
     info:
       path: Info.plist
+      properties:
+        CFBundleShortVersionString: "1.1"
+        CFBundleVersion: "2"
+        NSLocationWhenInUseUsageDescription: "Meter tracks the miles you drive during a dash so you have a mileage record."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "Allow Always so Meter can keep counting miles while you navigate in another app or your screen is off."
+        UIBackgroundModes:
+          - location
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UILaunchScreen: {}
     settings:
       base:
         GENERATE_INFOPLIST_FILE: NO
-        TARGETED_DEVICE_FAMILY: 1          # iPhone only
+        TARGETED_DEVICE_FAMILY: 1
         MARKETING_VERSION: "1.1"
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: "2"
         SWIFT_VERSION: "5.9"

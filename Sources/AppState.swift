@@ -1,0 +1,269 @@
+import Foundation
+import SwiftUI
+
+class AppState: ObservableObject {
+
+    @Published var data: AppData = AppData()
+    @Published var activeShift: Date? = nil
+    @Published var activeOdoStart: Double? = nil
+
+    private static var dataURL: URL {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("meter_data.json")
+    }
+
+    init() { load() }
+
+    // MARK: – Persistence
+
+    func load() {
+        let dec = JSONDecoder()
+        dec.dateDecodingStrategy = .iso8601
+        guard let raw = try? Data(contentsOf: Self.dataURL),
+              let decoded = try? dec.decode(AppData.self, from: raw) else { return }
+        data = decoded
+    }
+
+    func save() {
+        let enc = JSONEncoder()
+        enc.dateEncodingStrategy = .iso8601
+        try? enc.encode(data).write(to: Self.dataURL)
+    }
+
+    // MARK: – Convenience accessors
+
+    var offers:   [Offer]     { data.offers   }
+    var shifts:   [Shift]     { data.shifts   }
+    var settings: AppSettings { data.settings }
+
+    // MARK: – Offer mutations
+
+    func addOffer(_ o: Offer) {
+        data.offers.append(o)
+        save()
+    }
+
+    func updateOffer(_ o: Offer) {
+        guard let i = data.offers.firstIndex(where: { $0.id == o.id }) else { return }
+        data.offers[i] = o
+        save()
+    }
+
+    func deleteOffer(id: String) {
+        data.offers.removeAll { $0.id == id }
+        save()
+    }
+
+    func undoLast() {
+        guard !data.offers.isEmpty else { return }
+        data.offers.removeLast()
+        save()
+    }
+
+    // MARK: – Shift mutations
+
+    func clockIn(odo: Double?) {
+        let now = Date()
+        activeShift    = now
+        activeOdoStart = odo
+        let s = Shift(id: UUID().uuidString, start: now, end: nil, odoStart: odo, odoEnd: nil)
+        data.shifts.append(s)
+        save()
+    }
+
+    func clockOut(odo: Double?) {
+        guard let start = activeShift else { return }
+        if let i = data.shifts.lastIndex(where: { $0.start == start }) {
+            data.shifts[i].end    = Date()
+            data.shifts[i].odoEnd = odo
+        }
+        activeShift    = nil
+        activeOdoStart = nil
+        save()
+    }
+
+    func updateShift(_ s: Shift) {
+        guard let i = data.shifts.firstIndex(where: { $0.id == s.id }) else { return }
+        data.shifts[i] = s
+        save()
+    }
+
+    // MARK: – Settings
+
+    func updateSettings(_ s: AppSettings) {
+        data.settings = s
+        save()
+    }
+
+    // MARK: – Computed
+
+    var todayOffers: [Offer] {
+        let cal = Calendar.current
+        return data.offers.filter {
+            cal.isDateInToday($0.ts) && $0.decision == "accept" && !$0.missed
+        }
+    }
+
+    func shiftHours(todayOnly: Bool) -> Double {
+        let cal = Calendar.current
+        var total = 0.0
+        for s in data.shifts {
+            if todayOnly && !cal.isDateInToday(s.start) { continue }
+            let end = s.end ?? (activeShift.map { _ in Date() } ?? s.start)
+            total += end.timeIntervalSince(s.start) / 3600
+        }
+        return total
+    }
+
+    func odoMiles(todayOnly: Bool) -> Double {
+        let cal = Calendar.current
+        return data.shifts.reduce(0.0) { sum, s in
+            if todayOnly && !cal.isDateInToday(s.start) { return sum }
+            guard let a = s.odoStart, let b = s.odoEnd, b > a else { return sum }
+            return sum + (b - a)
+        }
+    }
+
+    func realHr(todayOnly: Bool) -> Double {
+        let h = shiftHours(todayOnly: todayOnly)
+        guard h > 0 else { return .nan }
+        let src = todayOnly
+            ? todayOffers
+            : data.offers.filter { $0.decision == "accept" && !$0.missed }
+        let net = src.reduce(0.0) { $0 + ($1.pay ?? 0) - ($1.miles ?? 0) * data.settings.cpm }
+        return net / h
+    }
+
+    var needsBackup: Bool {
+        data.offers.count - data.lastExportLen >= 25
+    }
+
+    var recentMerchants: [String] {
+        var seen = Set<String>()
+        var result: [String] = []
+        for o in data.offers.reversed() {
+            let m = o.merchant.trimmingCharacters(in: .whitespaces)
+            guard !m.isEmpty, !seen.contains(m) else { continue }
+            seen.insert(m)
+            result.append(m)
+            if result.count >= 6 { break }
+        }
+        return result
+    }
+
+    var hiddenTipStats: (n: Int, total: Double, avg: Double, pct: Double) {
+        let pairs = data.offers.filter {
+            $0.decision == "accept" && !$0.missed && $0.pay != nil && $0.finalPay != nil
+        }
+        guard !pairs.isEmpty else { return (0, 0, 0, 0) }
+        let bumped = pairs.filter { ($0.finalPay ?? 0) > ($0.pay ?? 0) }
+        let total  = bumped.reduce(0.0) { $0 + (($1.finalPay ?? 0) - ($1.pay ?? 0)) }
+        return (
+            bumped.count,
+            total,
+            bumped.isEmpty ? 0 : total / Double(bumped.count),
+            Double(bumped.count) / Double(pairs.count) * 100
+        )
+    }
+
+    // MARK: – Export
+
+    func exportCSV(todayOnly: Bool) -> String {
+        let dateFmt = DateFormatter()
+        dateFmt.dateFormat = "yyyy-MM-dd"
+        let timeFmt = DateFormatter()
+        timeFmt.dateFormat = "HH:mm"
+
+        var rows = ["date,time,decision,missed,restaurant,zone,pay,miles,mins,dpm,drive_min,wait_min,final_pay,hidden_bump"]
+        let src = todayOnly
+            ? data.offers.filter { Calendar.current.isDateInToday($0.ts) }
+            : data.offers
+
+        for o in src {
+            let bump: String
+            if let fp = o.finalPay, let p = o.pay, fp > p {
+                bump = String(format: "%.2f", fp - p)
+            } else { bump = "" }
+
+            rows.append([
+                dateFmt.string(from: o.ts),
+                timeFmt.string(from: o.ts),
+                o.decision,
+                o.missed ? "1" : "0",
+                o.merchant,
+                o.zone,
+                o.pay.map    { String(format: "%.2f", $0) } ?? "",
+                o.miles.map  { String(format: "%.2f", $0) } ?? "",
+                o.mins.map   { String(format: "%.0f", $0) } ?? "",
+                o.dpm.map    { String(format: "%.2f", $0) } ?? "",
+                o.driveMin.map { String(format: "%.1f", $0) } ?? "",
+                o.wait.map   { String(format: "%.1f", $0) } ?? "",
+                o.finalPay.map { String(format: "%.2f", $0) } ?? "",
+                bump
+            ].joined(separator: ","))
+        }
+
+        data.lastExportLen = data.offers.count
+        save()
+        return rows.joined(separator: "\n")
+    }
+
+    func exportShiftsCSV() -> String {
+        let dateFmt = DateFormatter()
+        dateFmt.dateFormat = "yyyy-MM-dd"
+        let timeFmt = DateFormatter()
+        timeFmt.dateFormat = "HH:mm"
+
+        var rows = ["date,clock_in,clock_out,hours,odo_start,odo_end,miles"]
+        for s in data.shifts {
+            let hrs = s.end.map { $0.timeIntervalSince(s.start) / 3600 }
+            let mi: Double
+            if let a = s.odoStart, let b = s.odoEnd, b > a { mi = b - a } else { mi = 0 }
+
+            rows.append([
+                dateFmt.string(from: s.start),
+                timeFmt.string(from: s.start),
+                s.end.map { timeFmt.string(from: $0) } ?? "",
+                hrs.map { String(format: "%.2f", $0) } ?? "",
+                s.odoStart.map { String(format: "%.1f", $0) } ?? "",
+                s.odoEnd.map   { String(format: "%.1f", $0) } ?? "",
+                String(format: "%.1f", mi)
+            ].joined(separator: ","))
+        }
+        return rows.joined(separator: "\n")
+    }
+
+    func exportJSON() -> Data? {
+        data.lastExportLen = data.offers.count
+        save()
+        let enc = JSONEncoder()
+        enc.outputFormatting = .prettyPrinted
+        enc.dateEncodingStrategy = .iso8601
+        return try? enc.encode(data)
+    }
+
+    func importJSON(_ incoming: AppData) {
+        var ids  = Set(data.offers.map { $0.id })
+        var sids = Set(data.shifts.map { $0.id })
+
+        for o in incoming.offers where !ids.contains(o.id) {
+            data.offers.append(o)
+            ids.insert(o.id)
+        }
+        for s in incoming.shifts where !sids.contains(s.id) {
+            data.shifts.append(s)
+            sids.insert(s.id)
+        }
+
+        data.offers.sort { $0.ts < $1.ts }
+        data.shifts.sort { $0.start < $1.start }
+        save()
+    }
+
+    func resetAll() {
+        data           = AppData()
+        activeShift    = nil
+        activeOdoStart = nil
+        save()
+    }
+}
