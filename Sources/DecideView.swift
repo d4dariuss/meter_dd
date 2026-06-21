@@ -530,9 +530,9 @@ struct ActiveOrderCard: View {
     @State private var noteText: String = ""
     @State private var noteSaved: Bool  = false
 
-    // Phase: 0=driving 1=at store/waiting 2=done
+    // Phase: 0=driving to restaurant  1=waiting at store  2=driving to customer
     private var phase: Int {
-        if offer.wait != nil { return 2 }
+        if offer.customerDriveStart != nil { return 2 }
         if offer.waitStart != nil { return 1 }
         return 0
     }
@@ -615,19 +615,9 @@ struct ActiveOrderCard: View {
                 // Wait phase
                 if phase == 1 {
                     if let dm = offer.driveMin {
-                        HStack(spacing: 6) {
-                            Image(systemName: "car.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.mGreen)
-                            Text(String(format: "Drive: %.1f min", dm))
-                                .font(.system(size: 13))
-                                .foregroundColor(.mGreen)
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 12))
-                                .foregroundColor(.mGreen)
-                        }
-                        .padding(.horizontal, 16).padding(.vertical, 8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        doneChip(icon: "car.fill", text: String(format: "Drive %.1f min", dm))
+                            .padding(.horizontal, 16).padding(.vertical, 8)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         MLine()
                     }
                     phaseRow(
@@ -642,16 +632,29 @@ struct ActiveOrderCard: View {
                     }
                 }
 
-                // Done (shouldn't normally render since activeOffer is cleared)
+                // Customer drive phase
                 if phase == 2 {
-                    HStack(spacing: 12) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.mGreen)
-                        Text("Order complete")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(.mGreen)
+                    HStack(spacing: 8) {
+                        if let dm = offer.driveMin {
+                            doneChip(icon: "car.fill", text: String(format: "Drive %.1f min", dm))
+                        }
+                        if let w = offer.wait {
+                            doneChip(icon: "timer", text: String(format: "Wait %.0f min", w))
+                        }
                     }
-                    .padding(16)
+                    .padding(.horizontal, 16).padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    MLine()
+                    phaseRow(
+                        icon: "figure.walk",
+                        color: .mAccent,
+                        label: "Driving to customer",
+                        elapsed: offer.customerDriveStart.map { now.timeIntervalSince($0) },
+                        buttonLabel: "Dropped Off ✓",
+                        buttonColor: .mGreen
+                    ) {
+                        store.markDelivered()
+                    }
                 }
 
                 MLine()
@@ -660,6 +663,23 @@ struct ActiveOrderCard: View {
                 notesSection
             }
         }
+    }
+
+    private func doneChip(icon: String, text: String) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: icon)
+                .font(.system(size: 11))
+                .foregroundColor(.mGreen)
+            Text(text)
+                .font(.system(size: 12))
+                .foregroundColor(.mGreen)
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 11))
+                .foregroundColor(.mGreen)
+        }
+        .padding(.horizontal, 10).padding(.vertical, 5)
+        .background(Color.mGreen.opacity(0.1))
+        .cornerRadius(6)
     }
 
     private func phaseRow(icon: String, color: Color, label: String,

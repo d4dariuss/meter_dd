@@ -8,20 +8,36 @@ struct LogView: View {
     var body: some View {
         NavigationView {
             Group {
-                if store.offers.isEmpty {
+                if store.offers.isEmpty && store.recentlyDeleted.isEmpty {
                     emptyState
                 } else {
-                    List {
-                        ForEach(store.offers.reversed()) { offer in
-                            OfferRow(offer: offer, now: now)
-                                .listRowBackground(Color.clear)
-                                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                                .listRowSeparator(.hidden)
+                    VStack(spacing: 0) {
+                        if !store.recentlyDeleted.isEmpty {
+                            recentlyDeletedBanner
+                        }
+                        if store.offers.isEmpty {
+                            emptyState
+                        } else {
+                            List {
+                                ForEach(store.offers.reversed()) { offer in
+                                    OfferRow(offer: offer, now: now)
+                                        .listRowBackground(Color.clear)
+                                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                                        .listRowSeparator(.hidden)
+                                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                            Button(role: .destructive) {
+                                                store.deleteOffer(id: offer.id)
+                                            } label: {
+                                                Label("Delete", systemImage: "trash")
+                                            }
+                                        }
+                                }
+                            }
+                            .listStyle(.plain)
+                            .background(Color.mBg)
+                            .scrollContentBackground(.hidden)
                         }
                     }
-                    .listStyle(.plain)
-                    .background(Color.mBg)
-                    .scrollContentBackground(.hidden)
                 }
             }
             .background(Color.mBg.ignoresSafeArea())
@@ -32,6 +48,58 @@ struct LogView: View {
             .tutorialAnchor("log-header")
         }
         .onReceive(ticker) { _ in now = Date() }
+    }
+
+    // MARK: – Recently deleted banner
+
+    private var recentlyDeletedBanner: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Image(systemName: "trash.circle")
+                    .font(.system(size: 13))
+                    .foregroundColor(.mMuted)
+                Text("Recently Deleted")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.mMuted)
+                Spacer()
+                Button("Clear all") { store.clearRecentlyDeleted() }
+                    .font(.system(size: 12))
+                    .foregroundColor(.mFaint)
+            }
+            .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 6)
+
+            ForEach(store.recentlyDeleted) { offer in
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(offer.merchant.isEmpty
+                             ? (offer.missed ? "Missed offer" : "Offer")
+                             : offer.merchant)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.mText)
+                        HStack(spacing: 6) {
+                            if let p = offer.pay {
+                                Text(String(format: "$%.2f", p))
+                                    .font(.system(size: 12)).foregroundColor(.mMuted)
+                            }
+                            Text(offer.ts, style: .time)
+                                .font(.system(size: 12)).foregroundColor(.mFaint)
+                        }
+                    }
+                    Spacer()
+                    Button("Recover") { store.recoverOffer(offer) }
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.mAccent)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(Color.mAccent.opacity(0.1)).cornerRadius(6)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 6)
+            }
+
+            Divider()
+                .background(Color.mLine)
+                .padding(.top, 6)
+        }
+        .background(Color.mSurface)
     }
 
     private var emptyState: some View {
@@ -62,6 +130,7 @@ struct OfferRow: View {
     @State private var finalPayStr:    String = ""
     @State private var manualWaitStr:  String = ""
     @State private var initialized:    Bool   = false
+    @State private var showingEdit:    Bool   = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -80,6 +149,9 @@ struct OfferRow: View {
             initialized   = true
             finalPayStr   = offer.finalPay.map { String(format: "%.2f", $0) } ?? ""
             manualWaitStr = offer.wait.map     { String(format: "%.0f", $0) } ?? ""
+        }
+        .sheet(isPresented: $showingEdit) {
+            OfferEditSheet(offer: offer)
         }
     }
 
@@ -123,11 +195,12 @@ struct OfferRow: View {
                 .font(.system(size: 12))
                 .foregroundColor(.mFaint)
 
+            // Edit button (replaces accidental-delete xmark)
             Button {
-                store.deleteOffer(id: offer.id)
+                showingEdit = true
             } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
+                Image(systemName: "pencil")
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.mFaint)
                     .padding(4)
             }
@@ -191,9 +264,13 @@ struct OfferRow: View {
 
     // MARK: – Pickup timer
 
-    // 0 = nothing  1 = driving  2 = waiting  3 = done
+    // 0=nothing  1=driving to restaurant  2=waiting at store
+    // 3=driving to customer  4=done
     private var timerState: Int {
-        if offer.wait != nil || (offer.driveMin != nil && offer.waitStart == nil) { return 3 }
+        if offer.deliveredAt != nil || offer.customerDriveMin != nil { return 4 }
+        if offer.customerDriveStart != nil { return 3 }
+        if offer.wait != nil { return 4 }                              // legacy records
+        if offer.driveMin != nil && offer.waitStart == nil { return 4 } // legacy
         if offer.waitStart  != nil { return 2 }
         if offer.driveStart != nil { return 1 }
         return 0
@@ -203,6 +280,7 @@ struct OfferRow: View {
     private var pickupTimerRow: some View {
         HStack(spacing: 10) {
             switch timerState {
+
             case 0:
                 Button {
                     var u = offer; u.driveStart = Date()
@@ -268,6 +346,7 @@ struct OfferRow: View {
                     if let ws = u.waitStart {
                         u.wait = Date().timeIntervalSince(ws) / 60
                     }
+                    u.customerDriveStart = Date()
                     store.updateOffer(u)
                 }
                 .font(.system(size: 12))
@@ -275,7 +354,39 @@ struct OfferRow: View {
                 .padding(.horizontal, 10).padding(.vertical, 6)
                 .background(Color.mGreen.opacity(0.1)).cornerRadius(7)
 
-            default:
+            case 3:
+                if let dm = offer.driveMin {
+                    Text(String(format: "🚗 %.1fm", dm))
+                        .font(.system(size: 12)).foregroundColor(.mMuted)
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(Color.mElev).cornerRadius(6)
+                }
+                if let w = offer.wait {
+                    let wc: Color = w >= store.settings.slowWait ? .mOrange : .mGreen
+                    Text(String(format: "⏱ %.0fm", w))
+                        .font(.system(size: 12)).foregroundColor(wc)
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(wc.opacity(0.1)).cornerRadius(6)
+                }
+                if let cs = offer.customerDriveStart {
+                    Text("🚶 " + fmtDuration(now.timeIntervalSince(cs)))
+                        .font(.system(size: 13, design: .monospaced))
+                        .foregroundColor(.mAccent)
+                }
+                Button("Delivered ✓") {
+                    var u = offer
+                    if let cs = u.customerDriveStart {
+                        u.customerDriveMin = Date().timeIntervalSince(cs) / 60
+                    }
+                    u.deliveredAt = Date()
+                    store.updateOffer(u)
+                }
+                .font(.system(size: 12))
+                .foregroundColor(.mGreen)
+                .padding(.horizontal, 10).padding(.vertical, 6)
+                .background(Color.mGreen.opacity(0.1)).cornerRadius(7)
+
+            default: // 4 = done
                 if let dm = offer.driveMin {
                     Text(String(format: "🚗 %.1fm", dm))
                         .font(.system(size: 12)).foregroundColor(.mMuted)
@@ -284,12 +395,137 @@ struct OfferRow: View {
                 }
                 if let w = offer.wait {
                     let color: Color = w >= store.settings.slowWait ? .mOrange : .mGreen
-                    Text(String(format: "⏱ %.0fm wait", w))
+                    Text(String(format: "⏱ %.0fm", w))
                         .font(.system(size: 12)).foregroundColor(color)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(color.opacity(0.1)).cornerRadius(6)
                 }
+                if let cdm = offer.customerDriveMin {
+                    Text(String(format: "🚶 %.1fm", cdm))
+                        .font(.system(size: 12)).foregroundColor(.mMuted)
+                        .padding(.horizontal, 8).padding(.vertical, 4)
+                        .background(Color.mElev).cornerRadius(6)
+                }
             }
         }
+    }
+}
+
+// MARK: – Offer edit sheet
+
+struct OfferEditSheet: View {
+    @EnvironmentObject var store: AppState
+    @Environment(\.dismiss) private var dismiss
+    @State var offer: Offer
+
+    @State private var payStr:       String = ""
+    @State private var miStr:        String = ""
+    @State private var minStr:       String = ""
+    @State private var fpStr:        String = ""
+    @State private var driveStr:     String = ""
+    @State private var waitStr:      String = ""
+    @State private var custDrStr:    String = ""
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(spacing: 0) {
+                    SectionHeader(title: "Offer details")
+                    Card {
+                        editTextRow("Restaurant", text: $offer.merchant)
+                        MLine()
+                        editTextRow("Zone", text: $offer.zone)
+                        MLine()
+                        editNumRow("Offer pay $",    str: $payStr)
+                        MLine()
+                        editNumRow("Miles",          str: $miStr)
+                        MLine()
+                        editNumRow("Est. mins",      str: $minStr)
+                        MLine()
+                        editNumRow("Final pay $",    str: $fpStr)
+                    }
+                    .padding(.horizontal, 16)
+
+                    SectionHeader(title: "Delivery times (minutes)")
+                    Card {
+                        editNumRow("Drive to restaurant", str: $driveStr)
+                        MLine()
+                        editNumRow("Wait at restaurant",  str: $waitStr)
+                        MLine()
+                        editNumRow("Drive to customer",   str: $custDrStr)
+                    }
+                    .padding(.horizontal, 16)
+
+                    Spacer(minLength: 32)
+                }
+            }
+            .background(Color.mBg.ignoresSafeArea())
+            .navigationTitle("Edit Offer")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Color.mSurface, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                        .foregroundColor(.mMuted)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { saveAndDismiss() }
+                        .foregroundColor(.mAccent)
+                        .fontWeight(.semibold)
+                }
+            }
+            .onAppear { populateFields() }
+        }
+    }
+
+    private func populateFields() {
+        payStr    = offer.pay.map        { String(format: "%.2f", $0) } ?? ""
+        miStr     = offer.miles.map      { String(format: "%.2f", $0) } ?? ""
+        minStr    = offer.mins.map       { String(format: "%.0f", $0) } ?? ""
+        fpStr     = offer.finalPay.map   { String(format: "%.2f", $0) } ?? ""
+        driveStr  = offer.driveMin.map   { String(format: "%.1f", $0) } ?? ""
+        waitStr   = offer.wait.map       { String(format: "%.1f", $0) } ?? ""
+        custDrStr = offer.customerDriveMin.map { String(format: "%.1f", $0) } ?? ""
+    }
+
+    private func saveAndDismiss() {
+        offer.pay              = Double(payStr)
+        offer.miles            = Double(miStr)
+        offer.mins             = Double(minStr)
+        offer.finalPay         = Double(fpStr)
+        offer.driveMin         = Double(driveStr)
+        offer.wait             = Double(waitStr)
+        offer.customerDriveMin = Double(custDrStr)
+        if let p = offer.pay, let m = offer.miles, m > 0 {
+            offer.dpm = p / m
+        }
+        store.updateOffer(offer)
+        dismiss()
+    }
+
+    private func editTextRow(_ label: String, text: Binding<String>) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 14)).foregroundColor(.mMuted)
+                .frame(width: 130, alignment: .leading)
+            TextField("", text: text)
+                .font(.system(size: 15)).foregroundColor(.mText)
+                .submitLabel(.done)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
+    }
+
+    private func editNumRow(_ label: String, str: Binding<String>) -> some View {
+        HStack {
+            Text(label)
+                .font(.system(size: 14)).foregroundColor(.mMuted)
+                .frame(width: 130, alignment: .leading)
+            TextField("—", text: str)
+                .keyboardType(.decimalPad)
+                .font(.system(size: 15)).foregroundColor(.mText)
+                .multilineTextAlignment(.trailing)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
     }
 }

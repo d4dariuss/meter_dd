@@ -10,6 +10,9 @@ class AppState: ObservableObject {
     // The currently in-progress accepted offer (not persisted across launches)
     @Published var activeOffer: Offer?    = nil
 
+    // In-memory soft-delete buffer — survives the session, cleared on next launch
+    @Published var recentlyDeleted: [Offer] = []
+
     private static var dataURL: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("meter_data.json")
@@ -62,8 +65,23 @@ class AppState: ObservableObject {
     }
 
     func deleteOffer(id: String) {
+        if let o = data.offers.first(where: { $0.id == id }) {
+            recentlyDeleted.insert(o, at: 0)
+            if recentlyDeleted.count > 10 { recentlyDeleted.removeLast() }
+        }
         data.offers.removeAll { $0.id == id }
         save()
+    }
+
+    func recoverOffer(_ o: Offer) {
+        recentlyDeleted.removeAll { $0.id == o.id }
+        data.offers.append(o)
+        data.offers.sort { $0.ts < $1.ts }
+        save()
+    }
+
+    func clearRecentlyDeleted() {
+        recentlyDeleted.removeAll()
     }
 
     func undoLast() {
@@ -90,6 +108,17 @@ class AppState: ObservableObject {
         if let ws = o.waitStart {
             o.wait = Date().timeIntervalSince(ws) / 60
         }
+        o.customerDriveStart = Date()
+        activeOffer = o
+        updateOffer(o)
+    }
+
+    func markDelivered() {
+        guard var o = activeOffer else { return }
+        if let cs = o.customerDriveStart {
+            o.customerDriveMin = Date().timeIntervalSince(cs) / 60
+        }
+        o.deliveredAt = Date()
         updateOffer(o)
         activeOffer = nil
     }
@@ -228,7 +257,7 @@ class AppState: ObservableObject {
         let timeFmt = DateFormatter()
         timeFmt.dateFormat = "HH:mm"
 
-        var rows = ["date,time,decision,missed,restaurant,zone,pay,miles,mins,dpm,drive_min,wait_min,final_pay,hidden_bump"]
+        var rows = ["date,time,decision,missed,restaurant,zone,pay,miles,mins,dpm,drive_min,wait_min,customer_drive_min,final_pay,hidden_bump"]
         let src = todayOnly
             ? data.offers.filter { Calendar.current.isDateInToday($0.ts) }
             : data.offers
@@ -250,8 +279,9 @@ class AppState: ObservableObject {
                 o.miles.map  { String(format: "%.2f", $0) } ?? "",
                 o.mins.map   { String(format: "%.0f", $0) } ?? "",
                 o.dpm.map    { String(format: "%.2f", $0) } ?? "",
-                o.driveMin.map { String(format: "%.1f", $0) } ?? "",
-                o.wait.map   { String(format: "%.1f", $0) } ?? "",
+                o.driveMin.map       { String(format: "%.1f", $0) } ?? "",
+                o.wait.map           { String(format: "%.1f", $0) } ?? "",
+                o.customerDriveMin.map { String(format: "%.1f", $0) } ?? "",
                 o.finalPay.map { String(format: "%.2f", $0) } ?? "",
                 bump
             ].joined(separator: ","))

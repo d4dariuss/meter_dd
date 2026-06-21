@@ -39,7 +39,7 @@ class TutorialManager: ObservableObject {
 
         TutorialStep(tab: 0, anchorID: "accept-decline",
                      title: "Accept or Decline",
-                     body: "Accept logs the offer and starts your drive timer automatically. Decline logs a rejection. Both count toward your rolling acceptance rate."),
+                     body: "Accept logs the offer and starts a 4-phase delivery timer: drive to restaurant → wait for food → drive to customer → drop off. Decline logs a rejection. Both count toward your rolling AR."),
 
         TutorialStep(tab: 0, anchorID: "missed-row",
                      title: "Log a missed offer",
@@ -52,7 +52,7 @@ class TutorialManager: ObservableObject {
         // ── Log tab ─────────────────────────────────────────────────────────
         TutorialStep(tab: 1, anchorID: "log-header",
                      title: "Your offer log",
-                     body: "Every offer lives here, newest first. After accepting, tap 'Start drive' when you leave, 'At store' when you arrive, 'Got food' when you pick up — this builds your restaurant wait rankings automatically."),
+                     body: "Every offer lives here, newest first. Track all 4 legs: 'Start drive' → 'At store' → 'Got food' → 'Delivered ✓'. Tap the pencil icon to edit any field after delivery. Swipe left to delete — if you do it by accident, it appears in the recovery banner at the top."),
 
         TutorialStep(tab: 1, anchorID: "log-final-pay",
                      title: "Enter final pay",

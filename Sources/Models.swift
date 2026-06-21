@@ -16,6 +16,10 @@ struct Offer: Codable, Identifiable {
     var driveStart: Date?
     var driveMin: Double?
     var waitStart: Date?
+    // Customer delivery leg (set when pickup is complete)
+    var customerDriveStart: Date?
+    var customerDriveMin: Double?
+    var deliveredAt: Date?
 }
 
 struct Shift: Codable, Identifiable {
