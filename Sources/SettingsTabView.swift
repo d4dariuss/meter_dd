@@ -2,8 +2,9 @@ import SwiftUI
 
 struct SettingsTabView: View {
     @EnvironmentObject var store: AppState
-    @State private var s: AppSettings = AppSettings()
-    @State private var saved: Bool = false
+    @AppStorage("hasSeenTutorial") private var hasSeenTutorial = false
+    @State private var s:    AppSettings = AppSettings()
+    @State private var saved: Bool       = false
 
     var body: some View {
         NavigationView {
@@ -50,7 +51,22 @@ struct SettingsTabView: View {
                         .padding(.top, 16)
                     }
 
-                    Spacer(minLength: 48)
+                    // Replay tutorial
+                    Button {
+                        hasSeenTutorial = false
+                    } label: {
+                        Label("Replay Tutorial", systemImage: "questionmark.circle")
+                            .font(.system(size: 14))
+                            .foregroundColor(.mAccent)
+                    }
+                    .padding(.top, 24)
+
+                    Text("Meter v1.1 · native iOS · your data stays on this device")
+                        .font(.system(size: 12))
+                        .foregroundColor(.mFaint)
+                        .padding(.top, 8)
+
+                    Spacer(minLength: 32)
                 }
             }
             .background(Color.mBg.ignoresSafeArea())

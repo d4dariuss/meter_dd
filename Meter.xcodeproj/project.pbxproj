@@ -22,6 +22,7 @@
 		B5BE2042A97E7E79728FAA4F /* meter.html in Resources */ = {isa = PBXBuildFile; fileRef = B8D1B9A13E6642F2E63654C9 /* meter.html */; };
 		C37C87CF0E6A14C36C089221 /* DecideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B786D69E23A7BF0A634CFC0F /* DecideView.swift */; };
 		E5473839D957008F7F434DA2 /* Calculations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F61FF4A377F7943C8B3F294 /* Calculations.swift */; };
+		EED9D22C508E494A5D88BE22 /* TutorialView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC8400DD3C88666759D606E /* TutorialView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -36,6 +37,7 @@
 		67287F1B0E3AF78F5DADA94E /* SettingsTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTabView.swift; sourceTree = "<group>"; };
 		70575D455AF60DD7C4697B2C /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		7744BD3B367383BC791FD38A /* Meter.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Meter.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8DC8400DD3C88666759D606E /* TutorialView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorialView.swift; sourceTree = "<group>"; };
 		A65E72176932BC41F4D9511B /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
 		B786D69E23A7BF0A634CFC0F /* DecideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecideView.swift; sourceTree = "<group>"; };
 		B8D1B9A13E6642F2E63654C9 /* meter.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = meter.html; sourceTree = "<group>"; };
@@ -60,6 +62,7 @@
 				3B94935B2AF95D0C01D28A16 /* SpotsView.swift */,
 				A65E72176932BC41F4D9511B /* StatsView.swift */,
 				BFFD93D4794303DE4C12D9C1 /* Theme.swift */,
+				8DC8400DD3C88666759D606E /* TutorialView.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -171,6 +174,7 @@
 				101E62F8F618D797DE7D8A79 /* SpotsView.swift in Sources */,
 				1A6425EBA1B51B6757BE037A /* StatsView.swift in Sources */,
 				41337B78CB978A48FF231412 /* Theme.swift in Sources */,
+				EED9D22C508E494A5D88BE22 /* TutorialView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

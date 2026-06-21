@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct ContentView: View {
+    @AppStorage("hasSeenTutorial") private var hasSeenTutorial = false
+    @State private var showTutorial = false
+
     var body: some View {
         TabView {
             DecideView()
@@ -21,6 +24,14 @@ struct ContentView: View {
             appearance.backgroundColor = UIColor(Color.mSurface)
             UITabBar.appearance().standardAppearance   = appearance
             UITabBar.appearance().scrollEdgeAppearance = appearance
+
+            if !hasSeenTutorial { showTutorial = true }
+        }
+        .fullScreenCover(isPresented: $showTutorial) {
+            TutorialView {
+                hasSeenTutorial = true
+                showTutorial    = false
+            }
         }
     }
 }
