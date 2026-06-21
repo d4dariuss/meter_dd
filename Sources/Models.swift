@@ -46,6 +46,26 @@ struct AppSettings: Codable {
     var currentAR: Double = 91.0
     var mpg: Double       = 25.0
     var gasPrice: Double  = 3.50
+
+    // Custom decoder so that JSON missing mpg/gasPrice (exported before those fields existed)
+    // still decodes successfully — Swift's synthesized init(from:) doesn't fall back to
+    // default values, it throws keyNotFound for any non-Optional missing key.
+    init() {}
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        cpm       = try c.decodeIfPresent(Double.self, forKey: .cpm)       ?? 0.30
+        mileGreen = try c.decodeIfPresent(Double.self, forKey: .mileGreen) ?? 2.0
+        mileOk    = try c.decodeIfPresent(Double.self, forKey: .mileOk)    ?? 1.5
+        mileMin   = try c.decodeIfPresent(Double.self, forKey: .mileMin)   ?? 1.0
+        hrTarget  = try c.decodeIfPresent(Double.self, forKey: .hrTarget)  ?? 25.0
+        arFloor   = try c.decodeIfPresent(Double.self, forKey: .arFloor)   ?? 70.0
+        irsRate   = try c.decodeIfPresent(Double.self, forKey: .irsRate)   ?? 0.725
+        minPayout = try c.decodeIfPresent(Double.self, forKey: .minPayout) ?? 6.0
+        slowWait  = try c.decodeIfPresent(Double.self, forKey: .slowWait)  ?? 10.0
+        currentAR = try c.decodeIfPresent(Double.self, forKey: .currentAR) ?? 91.0
+        mpg       = try c.decodeIfPresent(Double.self, forKey: .mpg)       ?? 25.0
+        gasPrice  = try c.decodeIfPresent(Double.self, forKey: .gasPrice)  ?? 3.50
+    }
 }
 
 struct AppData: Codable {

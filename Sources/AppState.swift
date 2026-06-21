@@ -357,6 +357,11 @@ class AppState: ObservableObject {
             sids.insert(s.id)
         }
 
+        // Merge merchant notes (incoming wins on conflict)
+        for (key, note) in incoming.merchantNotes {
+            data.merchantNotes[key] = note
+        }
+
         data.offers.sort { $0.ts < $1.ts }
         data.shifts.sort { $0.start < $1.start }
         save()
