@@ -268,23 +268,27 @@ class AppState: ObservableObject {
                 bump = String(format: "%.2f", fp - p)
             } else { bump = "" }
 
-            rows.append([
+            let f2: (Double) -> String = { String(format: "%.2f", $0) }
+            let f1: (Double) -> String = { String(format: "%.1f", $0) }
+            let f0: (Double) -> String = { String(format: "%.0f", $0) }
+            let cols: [String] = [
                 dateFmt.string(from: o.ts),
                 timeFmt.string(from: o.ts),
                 o.decision,
                 o.missed ? "1" : "0",
                 o.merchant,
                 o.zone,
-                o.pay.map    { String(format: "%.2f", $0) } ?? "",
-                o.miles.map  { String(format: "%.2f", $0) } ?? "",
-                o.mins.map   { String(format: "%.0f", $0) } ?? "",
-                o.dpm.map    { String(format: "%.2f", $0) } ?? "",
-                o.driveMin.map       { String(format: "%.1f", $0) } ?? "",
-                o.wait.map           { String(format: "%.1f", $0) } ?? "",
-                o.customerDriveMin.map { String(format: "%.1f", $0) } ?? "",
-                o.finalPay.map { String(format: "%.2f", $0) } ?? "",
+                o.pay.map(f2)            ?? "",
+                o.miles.map(f2)          ?? "",
+                o.mins.map(f0)           ?? "",
+                o.dpm.map(f2)            ?? "",
+                o.driveMin.map(f1)       ?? "",
+                o.wait.map(f1)           ?? "",
+                o.customerDriveMin.map(f1) ?? "",
+                o.finalPay.map(f2)       ?? "",
                 bump
-            ].joined(separator: ","))
+            ]
+            rows.append(cols.joined(separator: ","))
         }
 
         data.lastExportLen = data.offers.count

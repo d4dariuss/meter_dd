@@ -543,7 +543,7 @@ struct ActiveOrderCard: View {
         return p / m
     }
     private var lv: String {
-        guard let p = offer.pay, let m = offer.miles else { return "none" }
+        guard let p = offer.pay, offer.miles != nil else { return "none" }
         return Calculations.level(dpm: dpm, pay: p, s: store.settings)
     }
 
