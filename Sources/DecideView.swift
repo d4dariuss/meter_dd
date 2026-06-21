@@ -95,6 +95,7 @@ struct DecideView: View {
             .padding(.horizontal, 16)
         }
         .background(Color.mBg.ignoresSafeArea())
+        .withKeyboardDoneButton()
         .onReceive(ticker) { _ in now = Date() }
     }
 

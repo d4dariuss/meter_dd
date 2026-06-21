@@ -72,6 +72,7 @@ struct SettingsTabView: View {
                 }
             }
             .background(Color.mBg.ignoresSafeArea())
+            .withKeyboardDoneButton()
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.mSurface, for: .navigationBar)

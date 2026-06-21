@@ -1,4 +1,27 @@
 import SwiftUI
+import UIKit
+
+// MARK: – Keyboard dismiss
+
+extension UIApplication {
+    func hideKeyboard() {
+        sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+}
+
+extension View {
+    /// Adds a Done button above the keyboard for decimal-pad and number-pad fields.
+    func withKeyboardDoneButton() -> some View {
+        toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { UIApplication.shared.hideKeyboard() }
+                    .foregroundColor(.mAccent)
+                    .fontWeight(.semibold)
+            }
+        }
+    }
+}
 
 // MARK: – Level color
 

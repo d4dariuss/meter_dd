@@ -41,6 +41,7 @@ struct LogView: View {
                 }
             }
             .background(Color.mBg.ignoresSafeArea())
+            .withKeyboardDoneButton()
             .navigationTitle("Log")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.mSurface, for: .navigationBar)
@@ -460,6 +461,7 @@ struct OfferEditSheet: View {
                 }
             }
             .background(Color.mBg.ignoresSafeArea())
+            .withKeyboardDoneButton()
             .navigationTitle("Edit Offer")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.mSurface, for: .navigationBar)

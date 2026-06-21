@@ -4,166 +4,173 @@ struct TutorialOverlay: View {
     @ObservedObject var tutorial: TutorialManager
     let step: TutorialStep
 
-    private let spotPad: CGFloat = 10
-    private let tipWidth: CGFloat = 300
+    private let calloutWidth: CGFloat = 288
+    private let calloutEstH:  CGFloat = 158    // estimated height for Y positioning
+    private let ringPad:      CGFloat = 6
+    private let arrowH:       CGFloat = 10
 
-    private var spot: CGRect {
-        guard let raw = tutorial.anchors[step.anchorID], raw != .zero else { return .zero }
-        return raw.insetBy(dx: -spotPad, dy: -spotPad)
+    private var anchor: CGRect {
+        tutorial.anchors[step.anchorID] ?? .zero
     }
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack {
-                // Dark overlay with spotlight cutout
-                overlayMask
+        // Use UIScreen bounds to avoid a GeometryReader that would swallow touches.
+        // The underlying app stays fully interactive — only the callout card
+        // captures taps (for its buttons). Everything else passes through.
+        let size = UIScreen.main.bounds.size
 
-                // Tap outside spotlight to advance (convenience)
-                Color.clear
-                    .contentShape(Rectangle())
-                    .onTapGesture { tutorial.advance() }
+        ZStack {
+            // Transparent, non-blocking backdrop — MUST come first
+            Color.clear.allowsHitTesting(false)
 
-                // Tooltip callout
-                if spot != .zero {
-                    callout(in: geo.size)
-                } else {
-                    // No anchor found — centered card fallback
-                    centeredCard(in: geo.size)
-                }
+            if anchor != .zero {
+                highlightRing          // .allowsHitTesting(false) inside
+                calloutGroup(in: size) // only the card itself intercepts taps
+            } else {
+                fallbackCard(in: size)
             }
         }
         .ignoresSafeArea()
-        .animation(.easeInOut(duration: 0.25), value: step.anchorID)
-        .animation(.easeInOut(duration: 0.25), value: tutorial.stepIndex)
+        .animation(.easeInOut(duration: 0.22), value: step.anchorID)
+        .animation(.easeInOut(duration: 0.22), value: tutorial.stepIndex)
     }
 
-    // MARK: – Spotlight mask
+    // MARK: – Accent ring around the anchored element
 
-    private var overlayMask: some View {
-        Color.black.opacity(0.72)
-            .mask(
-                ZStack {
-                    Rectangle()
-                    if spot != .zero {
-                        RoundedRectangle(cornerRadius: 12)
-                            .frame(width: spot.width, height: spot.height)
-                            .position(x: spot.midX, y: spot.midY)
-                            .blendMode(.destinationOut)
-                    }
-                }
-                .compositingGroup()
-            )
-    }
-
-    // MARK: – Callout
-
-    private func callout(in size: CGSize) -> some View {
-        let showAbove = spot.midY > size.height * 0.55
-        let arrowX    = clamp(spot.midX, lo: 24 + 10, hi: size.width - 24 - 10)
-        let cardX     = clamp(spot.midX, lo: 24 + tipWidth / 2, hi: size.width - 24 - tipWidth / 2)
-
-        let cardY: CGFloat = showAbove
-            ? spot.minY - 12 - cardHeight - 10     // above spotlight
-            : spot.maxY + 12 + cardHeight / 2 + 10  // below spotlight
-
-        return ZStack {
-            // Arrow tip
-            ArrowTip(pointsUp: !showAbove)
-                .fill(Color.mElev)
-                .frame(width: 18, height: 10)
-                .position(
-                    x: arrowX,
-                    y: showAbove ? spot.minY - 12 : spot.maxY + 12
-                )
-
-            // Card
-            tooltipCard
-                .frame(width: tipWidth)
-                .position(x: cardX, y: cardY)
+    private var highlightRing: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.mAccent.opacity(0.08))
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.mAccent, lineWidth: 2)
         }
+        .frame(
+            width:  anchor.width  + ringPad * 2,
+            height: anchor.height + ringPad * 2
+        )
+        .shadow(color: Color.mAccent.opacity(0.45), radius: 8)
+        .position(x: anchor.midX, y: anchor.midY)
+        .allowsHitTesting(false)    // ring itself never blocks the UI it's highlighting
     }
 
-    // Rough height estimate for positioning (avoids GeometryReader nesting)
-    private var cardHeight: CGFloat { 160 }
+    // MARK: – Arrow + callout bubble
 
-    private func centeredCard(in size: CGSize) -> some View {
-        tooltipCard
-            .frame(width: tipWidth)
-            .position(x: size.width / 2, y: size.height / 2)
+    @ViewBuilder
+    private func calloutGroup(in size: CGSize) -> some View {
+        // Put callout above anchor when anchor is in the lower half of screen
+        let showAbove = anchor.midY > size.height * 0.50
+
+        // Callout center X: align with anchor, clamped to screen edges
+        let calloutX = (anchor.midX)
+            .clamped(to: calloutWidth / 2 + 16 ... size.width - calloutWidth / 2 - 16)
+
+        // Arrow X: try to point at anchor midX, keep inside callout bounds
+        let arrowX = (anchor.midX)
+            .clamped(to: calloutX - calloutWidth / 2 + 18 ... calloutX + calloutWidth / 2 - 18)
+
+        // Arrow Y: just outside the highlight ring
+        let arrowY: CGFloat = showAbove
+            ? anchor.minY - ringPad - arrowH / 2 - 2
+            : anchor.maxY + ringPad + arrowH / 2 + 2
+
+        // Callout center Y: clear of ring + arrow, clamped to remain on screen
+        var calloutY: CGFloat = showAbove
+            ? anchor.minY - ringPad - arrowH - 8 - calloutEstH / 2
+            : anchor.maxY + ringPad + arrowH + 8 + calloutEstH / 2
+        calloutY = calloutY.clamped(to: calloutEstH / 2 + 54 ... size.height - calloutEstH / 2 - 88)
+
+        // Arrow triangle (non-interactive)
+        ArrowTip(pointsUp: !showAbove)
+            .fill(Color.mElev)
+            .frame(width: 22, height: arrowH)
+            .position(x: arrowX, y: arrowY)
+            .allowsHitTesting(false)
+
+        // Callout bubble (interactive — buttons inside work normally)
+        calloutCard
+            .frame(width: calloutWidth)
+            .background(Color.mElev)
+            .cornerRadius(14)
+            .shadow(color: .black.opacity(0.28), radius: 18, x: 0, y: 4)
+            .position(x: calloutX, y: calloutY)
     }
 
-    // MARK: – Tooltip card
+    private func fallbackCard(in size: CGSize) -> some View {
+        calloutCard
+            .frame(width: calloutWidth)
+            .background(Color.mElev)
+            .cornerRadius(14)
+            .shadow(color: .black.opacity(0.28), radius: 18, x: 0, y: 4)
+            .position(x: size.width / 2, y: size.height * 0.46)
+    }
 
-    private var tooltipCard: some View {
+    // MARK: – Callout card content
+
+    private var calloutCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            // Progress
-            HStack {
-                Text(tutorial.progress)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundColor(.mFaint)
+
+            // Title + step counter
+            HStack(alignment: .top) {
+                Text(step.title)
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.mText)
                 Spacer()
-                Button {
-                    tutorial.dismiss()
-                } label: {
-                    Text("Skip")
-                        .font(.system(size: 12))
-                        .foregroundColor(.mFaint)
-                }
+                Text(tutorial.progress)
+                    .font(.system(size: 11))
+                    .foregroundColor(.mFaint)
             }
+
+            // Body
+            Text(step.body)
+                .font(.system(size: 13))
+                .foregroundColor(.mMuted)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
 
             // Progress bar
             GeometryReader { g in
                 ZStack(alignment: .leading) {
-                    RoundedRectangle(cornerRadius: 2).fill(Color.mLine).frame(height: 3)
+                    RoundedRectangle(cornerRadius: 2).fill(Color.mLine).frame(height: 2)
                     RoundedRectangle(cornerRadius: 2).fill(Color.mAccent)
-                        .frame(width: g.size.width * CGFloat(tutorial.stepIndex + 1) / CGFloat(tutorial.steps.count),
-                               height: 3)
+                        .frame(
+                            width: g.size.width * CGFloat(tutorial.stepIndex + 1)
+                                   / CGFloat(max(tutorial.steps.count, 1)),
+                            height: 2
+                        )
+                        .animation(.easeInOut(duration: 0.22), value: tutorial.stepIndex)
                 }
             }
-            .frame(height: 3)
+            .frame(height: 2)
 
-            // Content
-            Text(step.title)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(.mText)
+            // Navigation buttons
+            HStack(spacing: 8) {
+                Button("Skip") { tutorial.dismiss() }
+                    .font(.system(size: 12))
+                    .foregroundColor(.mFaint)
 
-            Text(step.body)
-                .font(.system(size: 13))
-                .foregroundColor(.mMuted)
-                .lineSpacing(3)
-                .fixedSize(horizontal: false, vertical: true)
-
-            // Navigation
-            HStack {
-                if tutorial.stepIndex > 0 {
-                    Button("← Back") { tutorial.stepIndex -= 1 }
-                        .font(.system(size: 13))
-                        .foregroundColor(.mFaint)
-                }
                 Spacer()
+
+                if tutorial.stepIndex > 0 {
+                    Button("← Back") { tutorial.back() }
+                        .font(.system(size: 13))
+                        .foregroundColor(.mMuted)
+                        .padding(.horizontal, 12).padding(.vertical, 6)
+                        .background(Color.mSurface).cornerRadius(7)
+                }
+
                 Button {
                     withAnimation { tutorial.advance() }
                 } label: {
                     Text(tutorial.isLastStep ? "Done ✓" : "Next →")
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 8)
+                        .padding(.horizontal, 14).padding(.vertical, 6)
                         .background(tutorial.isLastStep ? Color.mGreen : Color.mAccent)
-                        .cornerRadius(8)
+                        .cornerRadius(7)
                 }
             }
         }
-        .padding(16)
-        .background(Color.mElev)
-        .cornerRadius(14)
-        .shadow(color: .black.opacity(0.4), radius: 20, x: 0, y: 4)
-    }
-
-    // MARK: – Helpers
-
-    private func clamp(_ v: CGFloat, lo: CGFloat, hi: CGFloat) -> CGFloat {
-        min(max(v, lo), hi)
+        .padding(14)
     }
 }
 
@@ -184,5 +191,13 @@ struct ArrowTip: Shape {
         }
         p.closeSubpath()
         return p
+    }
+}
+
+// MARK: – Clamp helper
+
+private extension Comparable {
+    func clamped(to range: ClosedRange<Self>) -> Self {
+        min(max(self, range.lowerBound), range.upperBound)
     }
 }

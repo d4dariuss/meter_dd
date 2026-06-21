@@ -4,7 +4,7 @@ import SwiftUI
 
 struct TutorialStep {
     let tab:       Int     // 0=Decide 1=Log 2=Spots 3=Stats 4=Settings
-    let anchorID:  String  // matches .tutorialAnchor("id") on a real view
+    let anchorID:  String
     let title:     String
     let body:      String
 }
@@ -16,74 +16,72 @@ class TutorialManager: ObservableObject {
     @Published var stepIndex:  Int  = 0
     @Published var anchors:    [String: CGRect] = [:]
 
-    static let shared = TutorialManager()   // convenience; inject via environmentObject
-
     let steps: [TutorialStep] = [
 
-        // ── Decide tab ──────────────────────────────────────────────────────
+        // ── Decide ──────────────────────────────────────────────────────────
         TutorialStep(tab: 0, anchorID: "ar-header",
-                     title: "Rolling acceptance rate",
-                     body: "Estimated from your last 100 offers, seeded by your current DoorDash AR setting. Green = Platinum-safe. Red = at risk."),
+                     title: "Rolling AR",
+                     body: "Estimated from your last 100 offers. Green means you're Platinum-safe. Red means you're at risk of losing it."),
 
         TutorialStep(tab: 0, anchorID: "gauge",
                      title: "Offer grade",
-                     body: "The big number is $/mi — green is strong, red is skip. Fill in pay and miles below to see it update live before you decide."),
+                     body: "The big number is $/mi. Fill in pay and miles below to see it update live before you decide."),
 
         TutorialStep(tab: 0, anchorID: "restaurant-zone",
-                     title: "Restaurant & zone",
-                     body: "Type the name before you accept. After a few pickups Meter shows that restaurant's average wait time and your saved notes right here, in the gauge."),
+                     title: "Restaurant",
+                     body: "Type the name before you accept. After a few pickups, Meter shows that spot's average wait time right here."),
 
         TutorialStep(tab: 0, anchorID: "input-grid",
                      title: "Enter the offer",
-                     body: "Pay in dollars, miles to pickup, estimated minutes (optional — minutes unlock the NET/HR chip showing how much you earn per active hour)."),
+                     body: "Pay in dollars, miles to pickup. Adding minutes unlocks a NET/HR chip showing your hourly rate."),
 
         TutorialStep(tab: 0, anchorID: "accept-decline",
                      title: "Accept or Decline",
-                     body: "Accept logs the offer and starts a 4-phase delivery timer: drive to restaurant → wait for food → drive to customer → drop off. Decline logs a rejection. Both count toward your rolling AR."),
+                     body: "Accept starts a 4-leg delivery timer automatically. Decline logs the skip. Both count toward your rolling AR."),
 
         TutorialStep(tab: 0, anchorID: "missed-row",
-                     title: "Log a missed offer",
-                     body: "Saw an offer but didn't log it in time? Tap +dec or +acc to add it. Keeps your AR tracking honest without inventing offer data."),
+                     title: "Missed an offer?",
+                     body: "Tap +dec or +acc to log an offer you saw but couldn't enter in time. Keeps your AR tracking honest."),
 
         TutorialStep(tab: 0, anchorID: "shift-clock",
-                     title: "Shift clock & odometer",
-                     body: "Clock In when you start dashing and enter your odometer reading. Clock Out with the ending number — that delta is your tax-ready mileage record for the day."),
+                     title: "Shift clock",
+                     body: "Enter your odometer when you clock in and out. That delta is your official tax mileage record for the day."),
 
-        // ── Log tab ─────────────────────────────────────────────────────────
+        // ── Log ─────────────────────────────────────────────────────────────
         TutorialStep(tab: 1, anchorID: "log-header",
-                     title: "Your offer log",
-                     body: "Every offer lives here, newest first. Track all 4 legs: 'Start drive' → 'At store' → 'Got food' → 'Delivered ✓'. Tap the pencil icon to edit any field after delivery. Swipe left to delete — if you do it by accident, it appears in the recovery banner at the top."),
+                     title: "Your log",
+                     body: "All offers, newest first. Swipe left to delete — if you do it by accident, a recovery row appears at the top. Tap ✏ to edit any field after delivery."),
 
         TutorialStep(tab: 1, anchorID: "log-final-pay",
-                     title: "Enter final pay",
-                     body: "After delivery, type the actual payout from the DoorDash app. If it's higher than the offer, that's a hidden tip — the Stats tab tracks how often this happens and how much extra you're earning."),
+                     title: "Final pay",
+                     body: "Enter the actual payout from DoorDash. If it's higher than the offer, that's a hidden tip — Stats tracks the totals."),
 
-        // ── Spots tab ────────────────────────────────────────────────────────
+        // ── Spots ────────────────────────────────────────────────────────────
         TutorialStep(tab: 2, anchorID: "spots-filter",
-                     title: "Daypart filter",
-                     body: "Some spots are fast at lunch but a disaster at dinner. Filter here to compare wait times for the time of day you're actually dashing right now."),
+                     title: "Filter by daypart",
+                     body: "Some spots are fast at lunch and slow at dinner. Filter here to see wait times for the time of day you're dashing now."),
 
         TutorialStep(tab: 2, anchorID: "spots-list",
-                     title: "Restaurant wait rankings",
-                     body: "Sorted by median wait time — green is fast, red is slow. Tap 'Add' on any row to save a note (parking, entrance, anything useful). Notes appear in the gauge before you accept next time."),
+                     title: "Wait rankings",
+                     body: "Green = fast, red = slow. Tap Add to save a note about parking or entry. Notes show in the gauge before you accept next time."),
 
-        // ── Stats tab ────────────────────────────────────────────────────────
+        // ── Stats ────────────────────────────────────────────────────────────
         TutorialStep(tab: 3, anchorID: "stats-scope",
                      title: "Today vs. all time",
-                     body: "Today shows your current shift performance. All time includes your lifetime totals, tax write-off amount, and hidden tip totals."),
+                     body: "Today shows your current shift. All time includes lifetime totals, tax write-off amount, and hidden tip totals."),
 
         TutorialStep(tab: 3, anchorID: "stats-real-hr",
-                     title: "Real $/hr — your honest number",
-                     body: "Net pay divided by total shift hours, including dead time between orders. If this trails your target, you're losing too much time waiting for offers."),
+                     title: "Real $/hr",
+                     body: "Net pay ÷ total shift hours, including dead time between orders. Your honest rate — not just when orders are active."),
 
-        // ── Settings tab ─────────────────────────────────────────────────────
+        // ── Settings ─────────────────────────────────────────────────────────
         TutorialStep(tab: 4, anchorID: "settings-thresholds",
-                     title: "Decision thresholds",
-                     body: "Strong ≥ is your green target. OK ≥ is acceptable. Floor is the bare minimum. These drive every color in the gauge — tune them to match your market."),
+                     title: "Thresholds",
+                     body: "Set your green/OK/floor $/mi targets. These drive every color in the gauge — tune them to match your market."),
 
         TutorialStep(tab: 4, anchorID: "settings-ar",
-                     title: "Your current DoorDash AR",
-                     body: "Find your actual AR under Ratings in the DoorDash app and enter it here. This seeds the rolling estimate so it's accurate from your very first offer, not just after 100."),
+                     title: "Your current AR",
+                     body: "Find your actual AR under Ratings in the DoorDash app and enter it here. Tap Save when done."),
     ]
 
     var currentStep: TutorialStep? {
@@ -104,6 +102,10 @@ class TutorialManager: ObservableObject {
         if isLastStep { dismiss() } else { stepIndex += 1 }
     }
 
+    func back() {
+        if stepIndex > 0 { stepIndex -= 1 }
+    }
+
     func dismiss() {
         isActive  = false
         stepIndex = 0
@@ -122,7 +124,6 @@ struct TutorialAnchorKey: PreferenceKey {
 // MARK: – View modifier
 
 extension View {
-    /// Tag this view so the tutorial can spotlight it by ID.
     func tutorialAnchor(_ id: String) -> some View {
         background(
             GeometryReader { geo in
