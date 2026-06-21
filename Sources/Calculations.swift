@@ -48,10 +48,12 @@ enum Calculations {
             if o.decision == "accept" {
                 r.acc += 1
                 if !o.missed {
-                    r.gross += o.pay   ?? 0
-                    r.net   += (o.pay ?? 0) - (o.miles ?? 0) * cpm
-                    r.miles += o.miles ?? 0
-                    r.mins  += o.mins  ?? 0
+                    let pay   = o.finalPay ?? o.pay   ?? 0
+                    let miles = o.actualMiles ?? o.miles ?? 0
+                    r.gross += pay
+                    r.net   += pay - miles * cpm
+                    r.miles += miles
+                    r.mins  += o.mins ?? 0
                 }
             } else {
                 r.dec += 1

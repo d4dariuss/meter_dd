@@ -2,8 +2,6 @@ import SwiftUI
 
 struct LogView: View {
     @EnvironmentObject var store: AppState
-    @State private var now = Date()
-    private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         NavigationView {
@@ -20,7 +18,7 @@ struct LogView: View {
                         } else {
                             List {
                                 ForEach(store.offers.reversed()) { offer in
-                                    OfferRow(offer: offer, now: now)
+                                    OfferRow(offer: offer)
                                         .listRowBackground(Color.clear)
                                         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                                         .listRowSeparator(.hidden)
@@ -48,7 +46,6 @@ struct LogView: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
             .tutorialAnchor("log-header")
         }
-        .onReceive(ticker) { _ in now = Date() }
     }
 
     // MARK: – Recently deleted banner
@@ -126,7 +123,6 @@ struct LogView: View {
 struct OfferRow: View {
     @EnvironmentObject var store: AppState
     var offer: Offer
-    var now: Date
 
     @State private var finalPayStr:    String = ""
     @State private var manualWaitStr:  String = ""
@@ -215,6 +211,10 @@ struct OfferRow: View {
             if let m = offer.miles {
                 Text(String(format: "%.1f mi", m))
                     .font(.system(size: 12)).foregroundColor(.mFaint)
+            }
+            if let am = offer.actualMiles {
+                Text(String(format: "GPS %.1f mi", am))
+                    .font(.system(size: 12)).foregroundColor(.mGreen)
             }
             if let mn = offer.mins {
                 Text(String(format: "%.0f min", mn))
@@ -313,9 +313,7 @@ struct OfferRow: View {
 
             case 1:
                 if let ds = offer.driveStart {
-                    Text("🚗 " + fmtDuration(now.timeIntervalSince(ds)))
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundColor(.mAccent)
+                    LiveTimer(since: ds, prefix: "🚗 ", color: .mAccent)
                 }
                 Button("At store") {
                     var u = offer
@@ -338,9 +336,7 @@ struct OfferRow: View {
                         .background(Color.mElev).cornerRadius(6)
                 }
                 if let ws = offer.waitStart {
-                    Text("⏱ " + fmtDuration(now.timeIntervalSince(ws)))
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundColor(.mOrange)
+                    LiveTimer(since: ws, prefix: "⏱ ", color: .mOrange)
                 }
                 Button("Got food") {
                     var u = offer
@@ -370,9 +366,7 @@ struct OfferRow: View {
                         .background(wc.opacity(0.1)).cornerRadius(6)
                 }
                 if let cs = offer.customerDriveStart {
-                    Text("🚶 " + fmtDuration(now.timeIntervalSince(cs)))
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundColor(.mAccent)
+                    LiveTimer(since: cs, prefix: "🚶 ", color: .mAccent)
                 }
                 Button("Delivered ✓") {
                     var u = offer

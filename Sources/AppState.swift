@@ -7,8 +7,8 @@ class AppState: ObservableObject {
     @Published var activeShift: Date?     = nil
     @Published var activeOdoStart: Double? = nil
 
-    // The currently in-progress accepted offer (not persisted across launches)
-    @Published var activeOffer: Offer?    = nil
+    // Up to 3 in-progress accepted offers (not persisted across launches)
+    @Published var activeOffers: [Offer]  = []
 
     // In-memory soft-delete buffer — survives the session, cleared on next launch
     @Published var recentlyDeleted: [Offer] = []
@@ -44,12 +44,15 @@ class AppState: ObservableObject {
 
     // MARK: – Offer mutations
 
-    // Accepts an offer and immediately starts the drive timer
-    func acceptOffer(_ o: Offer) {
+    // Accepts an offer and immediately starts the drive timer. Pass gpsMeters from
+    // tracker.meters if GPS is active so actualMiles can be computed on delivery.
+    func acceptOffer(_ o: Offer, gpsMeters: Double? = nil) {
+        guard activeOffers.count < 3 else { return }
         var live = o
         live.driveStart = Date()
+        live.gpsAtStart = gpsMeters
         data.offers.append(live)
-        activeOffer = live
+        activeOffers.append(live)
         save()
     }
 
@@ -86,45 +89,51 @@ class AppState: ObservableObject {
 
     func undoLast() {
         guard !data.offers.isEmpty else { return }
-        data.offers.removeLast()
-        activeOffer = nil
+        let last = data.offers.removeLast()
+        activeOffers.removeAll { $0.id == last.id }
         save()
     }
 
-    // MARK: – Active order state machine
+    // MARK: – Active order state machine (all methods take offer id)
 
-    func markAtStore() {
-        guard var o = activeOffer else { return }
+    func markAtStore(id: String) {
+        guard let i = activeOffers.firstIndex(where: { $0.id == id }) else { return }
+        var o = activeOffers[i]
         if let ds = o.driveStart {
             o.driveMin = Date().timeIntervalSince(ds) / 60
         }
         o.waitStart = Date()
-        activeOffer = o
+        activeOffers[i] = o
         updateOffer(o)
     }
 
-    func markGotFood() {
-        guard var o = activeOffer else { return }
+    func markGotFood(id: String) {
+        guard let i = activeOffers.firstIndex(where: { $0.id == id }) else { return }
+        var o = activeOffers[i]
         if let ws = o.waitStart {
             o.wait = Date().timeIntervalSince(ws) / 60
         }
         o.customerDriveStart = Date()
-        activeOffer = o
+        activeOffers[i] = o
         updateOffer(o)
     }
 
-    func markDelivered() {
-        guard var o = activeOffer else { return }
+    func markDelivered(id: String, gpsMeters: Double? = nil) {
+        guard let i = activeOffers.firstIndex(where: { $0.id == id }) else { return }
+        var o = activeOffers[i]
         if let cs = o.customerDriveStart {
             o.customerDriveMin = Date().timeIntervalSince(cs) / 60
         }
         o.deliveredAt = Date()
+        if let start = o.gpsAtStart, let current = gpsMeters, current > start {
+            o.actualMiles = (current - start) / 1609.344
+        }
         updateOffer(o)
-        activeOffer = nil
+        activeOffers.remove(at: i)
     }
 
-    func cancelActiveOrder() {
-        activeOffer = nil
+    func cancelActiveOrder(id: String) {
+        activeOffers.removeAll { $0.id == id }
     }
 
     // MARK: – Merchant notes
@@ -213,7 +222,11 @@ class AppState: ObservableObject {
         let src = todayOnly
             ? todayOffers
             : data.offers.filter { $0.decision == "accept" && !$0.missed }
-        let net = src.reduce(0.0) { $0 + ($1.pay ?? 0) - ($1.miles ?? 0) * data.settings.cpm }
+        let net = src.reduce(0.0) { sum, o in
+            let pay   = (o.finalPay ?? o.pay)   ?? 0
+            let miles = (o.actualMiles ?? o.miles) ?? 0
+            return sum + pay - miles * data.settings.cpm
+        }
         return net / h
     }
 
@@ -257,7 +270,7 @@ class AppState: ObservableObject {
         let timeFmt = DateFormatter()
         timeFmt.dateFormat = "HH:mm"
 
-        var rows = ["date,time,decision,missed,restaurant,zone,pay,miles,mins,dpm,drive_min,wait_min,customer_drive_min,final_pay,hidden_bump"]
+        var rows = ["date,time,decision,missed,restaurant,zone,pay,miles,actual_miles,mins,dpm,drive_min,wait_min,customer_drive_min,final_pay,hidden_bump"]
         let src = todayOnly
             ? data.offers.filter { Calendar.current.isDateInToday($0.ts) }
             : data.offers
@@ -278,14 +291,15 @@ class AppState: ObservableObject {
                 o.missed ? "1" : "0",
                 o.merchant,
                 o.zone,
-                o.pay.map(f2)            ?? "",
-                o.miles.map(f2)          ?? "",
-                o.mins.map(f0)           ?? "",
-                o.dpm.map(f2)            ?? "",
-                o.driveMin.map(f1)       ?? "",
-                o.wait.map(f1)           ?? "",
-                o.customerDriveMin.map(f1) ?? "",
-                o.finalPay.map(f2)       ?? "",
+                o.pay.map(f2)                  ?? "",
+                o.miles.map(f2)                ?? "",
+                o.actualMiles.map(f2)          ?? "",
+                o.mins.map(f0)                 ?? "",
+                o.dpm.map(f2)                  ?? "",
+                o.driveMin.map(f1)             ?? "",
+                o.wait.map(f1)                 ?? "",
+                o.customerDriveMin.map(f1)     ?? "",
+                o.finalPay.map(f2)             ?? "",
                 bump
             ]
             rows.append(cols.joined(separator: ","))
@@ -352,6 +366,7 @@ class AppState: ObservableObject {
         data           = AppData()
         activeShift    = nil
         activeOdoStart = nil
+        activeOffers   = []
         save()
     }
 }

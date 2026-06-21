@@ -20,6 +20,9 @@ struct Offer: Codable, Identifiable {
     var customerDriveStart: Date?
     var customerDriveMin: Double?
     var deliveredAt: Date?
+    // GPS-measured distance and snapshot for per-order tracking
+    var actualMiles: Double?
+    var gpsAtStart: Double?
 }
 
 struct Shift: Codable, Identifiable {
@@ -41,6 +44,8 @@ struct AppSettings: Codable {
     var minPayout: Double = 6.0
     var slowWait: Double  = 10.0
     var currentAR: Double = 91.0
+    var mpg: Double       = 25.0
+    var gasPrice: Double  = 3.50
 }
 
 struct AppData: Codable {

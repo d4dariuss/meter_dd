@@ -41,6 +41,16 @@ struct SettingsTabView: View {
                     .padding(.horizontal, 16)
                     .tutorialAnchor("settings-ar")
 
+                    SectionHeader(title: "Fuel calculator")
+                    Card {
+                        settingRow("MPG",             $s.mpg,      decimals: 0)
+                        MLine()
+                        settingRow("Gas price $/gal", $s.gasPrice, decimals: 2)
+                        MLine()
+                        computedFuelRow
+                    }
+                    .padding(.horizontal, 16)
+
                     // Save confirmation
                     if saved {
                         HStack {
@@ -91,6 +101,27 @@ struct SettingsTabView: View {
             }
         }
         .onAppear { s = store.settings }
+    }
+
+    private var computedFuelRow: some View {
+        let cpm = s.mpg > 0 ? s.gasPrice / s.mpg : 0.0
+        return HStack {
+            Text("Fuel $/mi")
+                .font(.system(size: 14)).foregroundColor(.mMuted)
+            Spacer()
+            Text(String(format: "$%.3f", cpm))
+                .font(.system(size: 14, weight: .semibold)).foregroundColor(.mText)
+            Button("Use →") {
+                guard s.mpg > 0 else { return }
+                s.cpm = s.gasPrice / s.mpg
+            }
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundColor(.white)
+            .padding(.horizontal, 10).padding(.vertical, 5)
+            .background(Color.mAccent).cornerRadius(6)
+            .padding(.leading, 10)
+        }
+        .padding(.horizontal, 16).padding(.vertical, 12)
     }
 
     private func settingRow(_ label: String, _ val: Binding<Double>, decimals: Int = 2) -> some View {

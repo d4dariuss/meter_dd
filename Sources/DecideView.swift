@@ -37,6 +37,7 @@ struct DecideView: View {
         return Calculations.netHr(pay: p, miles: m, mins: mn, cpm: store.settings.cpm)
     }
     private var canDecide: Bool { pay != nil && miles != nil }
+    private var canAccept: Bool { canDecide && store.activeOffers.count < 3 }
 
     // Merchant history for pre-accept intel
     private var merchantHistory: MerchantStat? {
@@ -70,18 +71,20 @@ struct DecideView: View {
                 // AR header
                 arHeader
 
-                // Active order OR normal gauge+inputs
-                if let active = store.activeOffer {
-                    ActiveOrderCard(offer: active, now: now)
-                } else {
-                    gaugeCard
-                        .tutorialAnchor("gauge")
-                    inputCard
-                    actionButtons
-                        .tutorialAnchor("accept-decline")
-                    undoMissedRow
-                        .tutorialAnchor("missed-row")
+                // Active orders (up to 3 stacked)
+                ForEach(store.activeOffers) { active in
+                    ActiveOrderCard(offer: active)
                 }
+                if store.activeOffers.count >= 3 { maxOrdersBanner }
+
+                // Gauge + inputs always visible; Accept disabled at max 3
+                gaugeCard
+                    .tutorialAnchor("gauge")
+                inputCard
+                actionButtons
+                    .tutorialAnchor("accept-decline")
+                undoMissedRow
+                    .tutorialAnchor("missed-row")
 
                 // Shift clock (always visible)
                 shiftClockCard
@@ -366,11 +369,11 @@ struct DecideView: View {
             Button { logAccept() } label: {
                 Text("Accept")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(canDecide ? .white : .mFaint)
+                    .foregroundColor(canAccept ? .white : .mFaint)
                     .frame(maxWidth: .infinity).padding(.vertical, 16)
-                    .background(canDecide ? levelColor(lv) : Color.mElev).cornerRadius(10)
+                    .background(canAccept ? levelColor(lv) : Color.mElev).cornerRadius(10)
             }
-            .disabled(!canDecide)
+            .disabled(!canAccept)
         }
     }
 
@@ -397,6 +400,22 @@ struct DecideView: View {
                 .padding(.vertical, 8).padding(.horizontal, 10)
                 .background(Color.mSurface).cornerRadius(8)
         }
+    }
+
+    // MARK: – Max orders banner
+
+    private var maxOrdersBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundColor(.mAmber)
+            Text("3 active orders — complete one to accept more")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.mAmber)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.mAmber.opacity(0.12))
+        .cornerRadius(8)
     }
 
     // MARK: – Shift clock
@@ -474,14 +493,15 @@ struct DecideView: View {
     // MARK: – Actions
 
     private func logAccept() {
-        guard let p = pay, let m = miles else { return }
+        guard let p = pay, let m = miles, store.activeOffers.count < 3 else { return }
         var o = Offer()
         o.pay = p; o.miles = m; o.mins = mins
         o.dpm = Calculations.dpm(pay: p, miles: m)
         o.decision = "accept"
         o.merchant = merchant.trimmingCharacters(in: .whitespaces)
         o.zone     = zone.trimmingCharacters(in: .whitespaces)
-        store.acceptOffer(o)   // starts drive timer, sets activeOffer
+        let gps = tracker.isTracking ? tracker.meters : nil
+        store.acceptOffer(o, gpsMeters: gps)
         clearInputs()
     }
 
@@ -524,9 +544,9 @@ struct DecideView: View {
 // MARK: – Active order card
 
 struct ActiveOrderCard: View {
-    @EnvironmentObject var store: AppState
+    @EnvironmentObject var store:   AppState
+    @EnvironmentObject var tracker: LocationTracker
     var offer: Offer
-    var now: Date
 
     @State private var noteText: String = ""
     @State private var noteSaved: Bool  = false
@@ -588,7 +608,7 @@ struct ActiveOrderCard: View {
                     }
                     Spacer()
                     Button {
-                        store.cancelActiveOrder()
+                        store.cancelActiveOrder(id: offer.id)
                     } label: {
                         Text("Skip timers")
                             .font(.system(size: 12))
@@ -605,11 +625,11 @@ struct ActiveOrderCard: View {
                         icon: "car.fill",
                         color: .mAccent,
                         label: "Driving to pickup",
-                        elapsed: offer.driveStart.map { now.timeIntervalSince($0) },
+                        since: offer.driveStart,
                         buttonLabel: "At Store →",
                         buttonColor: .mAmber
                     ) {
-                        store.markAtStore()
+                        store.markAtStore(id: offer.id)
                     }
                 }
 
@@ -625,11 +645,11 @@ struct ActiveOrderCard: View {
                         icon: "figure.stand",
                         color: .mOrange,
                         label: "Waiting for food",
-                        elapsed: offer.waitStart.map { now.timeIntervalSince($0) },
+                        since: offer.waitStart,
                         buttonLabel: "Got Food →",
                         buttonColor: .mGreen
                     ) {
-                        store.markGotFood()
+                        store.markGotFood(id: offer.id)
                     }
                 }
 
@@ -650,11 +670,12 @@ struct ActiveOrderCard: View {
                         icon: "figure.walk",
                         color: .mAccent,
                         label: "Driving to customer",
-                        elapsed: offer.customerDriveStart.map { now.timeIntervalSince($0) },
+                        since: offer.customerDriveStart,
                         buttonLabel: "Dropped Off ✓",
                         buttonColor: .mGreen
                     ) {
-                        store.markDelivered()
+                        let gps = tracker.isTracking ? tracker.meters : nil
+                        store.markDelivered(id: offer.id, gpsMeters: gps)
                     }
                 }
 
@@ -684,7 +705,7 @@ struct ActiveOrderCard: View {
     }
 
     private func phaseRow(icon: String, color: Color, label: String,
-                          elapsed: TimeInterval?, buttonLabel: String,
+                          since: Date?, buttonLabel: String,
                           buttonColor: Color, action: @escaping () -> Void) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 4) {
@@ -696,10 +717,9 @@ struct ActiveOrderCard: View {
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(color)
                 }
-                if let elapsed = elapsed {
-                    Text(fmtDuration(elapsed))
-                        .font(.system(size: 32, weight: .bold, design: .monospaced))
-                        .foregroundColor(.mText)
+                if let since = since {
+                    LiveTimer(since: since,
+                              font: .system(size: 32, weight: .bold, design: .monospaced))
                 }
             }
             Spacer()

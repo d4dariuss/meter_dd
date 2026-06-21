@@ -139,6 +139,26 @@ struct StatRow: View {
     }
 }
 
+// MARK: – Live elapsed timer (isolated ticker — only this Text re-renders each second)
+
+struct LiveTimer: View {
+    let since: Date
+    var prefix: String = ""
+    var color: Color   = .mText
+    var font: Font     = .system(size: 13, design: .monospaced)
+
+    @State private var elapsed: TimeInterval = 0
+    private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        Text(prefix + fmtDuration(elapsed))
+            .font(font)
+            .foregroundColor(color)
+            .onReceive(ticker) { _ in elapsed = Date().timeIntervalSince(since) }
+            .onAppear { elapsed = Date().timeIntervalSince(since) }
+    }
+}
+
 // MARK: – GPS pill
 
 struct GpsPill: View {
