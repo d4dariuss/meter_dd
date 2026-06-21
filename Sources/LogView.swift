@@ -39,13 +39,13 @@ struct LogView: View {
                 }
             }
             .background(Color.mBg.ignoresSafeArea())
-            .withKeyboardDoneButton()
             .navigationTitle("Log")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.mSurface, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .tutorialAnchor("log-header")
         }
+        .withKeyboardDoneButton()
     }
 
     // MARK: – Recently deleted banner
@@ -458,7 +458,6 @@ struct OfferEditSheet: View {
             }
             .scrollDismissesKeyboard(.never)
             .background(Color.mBg.ignoresSafeArea())
-            .withKeyboardDoneButton()
             .navigationTitle("Edit Offer")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.mSurface, for: .navigationBar)
@@ -476,6 +475,7 @@ struct OfferEditSheet: View {
             }
             .onAppear { populateFields() }
         }
+        .withKeyboardDoneButton()
     }
 
     private func populateFields() {

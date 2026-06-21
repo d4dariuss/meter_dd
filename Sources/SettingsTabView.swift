@@ -82,7 +82,6 @@ struct SettingsTabView: View {
                 }
             }
             .background(Color.mBg.ignoresSafeArea())
-            .withKeyboardDoneButton()
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.mSurface, for: .navigationBar)
@@ -90,6 +89,7 @@ struct SettingsTabView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
+                        UIApplication.shared.hideKeyboard()
                         store.updateSettings(s)
                         saved = true
                         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -100,6 +100,7 @@ struct SettingsTabView: View {
                 }
             }
         }
+        .withKeyboardDoneButton()
         .onAppear { s = store.settings }
     }
 
