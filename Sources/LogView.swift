@@ -148,7 +148,9 @@ struct OfferRow: View {
             manualWaitStr = offer.wait.map     { String(format: "%.0f", $0) } ?? ""
         }
         .sheet(isPresented: $showingEdit) {
-            OfferEditSheet(offer: offer)
+            OfferEditSheet(offer: offer) { updated in
+                store.updateOffer(updated)
+            }
         }
     }
 
@@ -409,9 +411,9 @@ struct OfferRow: View {
 // MARK: – Offer edit sheet
 
 struct OfferEditSheet: View {
-    @EnvironmentObject var store: AppState
     @Environment(\.dismiss) private var dismiss
     @State var offer: Offer
+    let onSave: (Offer) -> Void
 
     @State private var payStr:       String = ""
     @State private var miStr:        String = ""
@@ -422,7 +424,7 @@ struct OfferEditSheet: View {
     @State private var custDrStr:    String = ""
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
                 VStack(spacing: 0) {
                     SectionHeader(title: "Offer details")
@@ -454,6 +456,7 @@ struct OfferEditSheet: View {
                     Spacer(minLength: 32)
                 }
             }
+            .scrollDismissesKeyboard(.never)
             .background(Color.mBg.ignoresSafeArea())
             .withKeyboardDoneButton()
             .navigationTitle("Edit Offer")
@@ -496,7 +499,7 @@ struct OfferEditSheet: View {
         if let p = offer.pay, let m = offer.miles, m > 0 {
             offer.dpm = p / m
         }
-        store.updateOffer(offer)
+        onSave(offer)
         dismiss()
     }
 
@@ -507,7 +510,7 @@ struct OfferEditSheet: View {
                 .frame(width: 130, alignment: .leading)
             TextField("", text: text)
                 .font(.system(size: 15)).foregroundColor(.mText)
-                .submitLabel(.done)
+                .submitLabel(.next)
         }
         .padding(.horizontal, 16).padding(.vertical, 12)
     }
