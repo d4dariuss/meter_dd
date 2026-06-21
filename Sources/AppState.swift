@@ -164,9 +164,20 @@ class AppState: ObservableObject {
     }
 
     func clockOut(odo: Double?) {
+        let now = Date()
+        // Seal any orders still in progress so nothing hangs open after the dash ends
+        for i in activeOffers.indices.reversed() {
+            var o = activeOffers[i]
+            if o.driveMin == nil, let ds = o.driveStart { o.driveMin = now.timeIntervalSince(ds) / 60 }
+            if o.wait == nil, let ws = o.waitStart { o.wait = now.timeIntervalSince(ws) / 60 }
+            if o.customerDriveMin == nil, let cs = o.customerDriveStart { o.customerDriveMin = now.timeIntervalSince(cs) / 60 }
+            o.deliveredAt = now
+            if let j = data.offers.firstIndex(where: { $0.id == o.id }) { data.offers[j] = o }
+            activeOffers.remove(at: i)
+        }
         guard let start = activeShift else { return }
         if let i = data.shifts.lastIndex(where: { $0.start == start }) {
-            data.shifts[i].end    = Date()
+            data.shifts[i].end    = now
             data.shifts[i].odoEnd = odo
         }
         activeShift    = nil

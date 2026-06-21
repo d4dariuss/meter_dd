@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LogView: View {
     @EnvironmentObject var store: AppState
+    @State private var editingOffer: Offer? = nil
 
     var body: some View {
         NavigationView {
@@ -18,7 +19,7 @@ struct LogView: View {
                         } else {
                             List {
                                 ForEach(store.offers.reversed()) { offer in
-                                    OfferRow(offer: offer)
+                                    OfferRow(offer: offer, onEdit: { editingOffer = $0 })
                                         .listRowBackground(Color.clear)
                                         .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
                                         .listRowSeparator(.hidden)
@@ -46,6 +47,11 @@ struct LogView: View {
             .tutorialAnchor("log-header")
         }
         .withKeyboardDoneButton()
+        .sheet(item: $editingOffer) { offer in
+            OfferEditSheet(offer: offer) { updated in
+                store.updateOffer(updated)
+            }
+        }
     }
 
     // MARK: – Recently deleted banner
@@ -123,11 +129,11 @@ struct LogView: View {
 struct OfferRow: View {
     @EnvironmentObject var store: AppState
     var offer: Offer
+    var onEdit: (Offer) -> Void
 
     @State private var finalPayStr:    String = ""
     @State private var manualWaitStr:  String = ""
     @State private var initialized:    Bool   = false
-    @State private var showingEdit:    Bool   = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -146,11 +152,6 @@ struct OfferRow: View {
             initialized   = true
             finalPayStr   = offer.finalPay.map { String(format: "%.2f", $0) } ?? ""
             manualWaitStr = offer.wait.map     { String(format: "%.0f", $0) } ?? ""
-        }
-        .sheet(isPresented: $showingEdit) {
-            OfferEditSheet(offer: offer) { updated in
-                store.updateOffer(updated)
-            }
         }
     }
 
@@ -194,9 +195,9 @@ struct OfferRow: View {
                 .font(.system(size: 12))
                 .foregroundColor(.mFaint)
 
-            // Edit button (replaces accidental-delete xmark)
+            // Edit button
             Button {
-                showingEdit = true
+                onEdit(offer)
             } label: {
                 Image(systemName: "pencil")
                     .font(.system(size: 12, weight: .medium))
