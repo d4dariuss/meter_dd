@@ -5,7 +5,7 @@ struct TutorialOverlay: View {
     let step: TutorialStep
 
     private let calloutWidth: CGFloat = 288
-    private let calloutEstH:  CGFloat = 158    // estimated height for Y positioning
+    private let calloutEstH:  CGFloat = 158
     private let ringPad:      CGFloat = 6
     private let arrowH:       CGFloat = 10
 
@@ -14,18 +14,15 @@ struct TutorialOverlay: View {
     }
 
     var body: some View {
-        // Use UIScreen bounds to avoid a GeometryReader that would swallow touches.
-        // The underlying app stays fully interactive — only the callout card
-        // captures taps (for its buttons). Everything else passes through.
         let size = UIScreen.main.bounds.size
 
         ZStack {
-            // Transparent, non-blocking backdrop — MUST come first
+            // Transparent, non-blocking backdrop — touches pass through to the app
             Color.clear.allowsHitTesting(false)
 
             if anchor != .zero {
-                highlightRing          // .allowsHitTesting(false) inside
-                calloutGroup(in: size) // only the card itself intercepts taps
+                highlightRing
+                calloutGroup(in: size)
             } else {
                 fallbackCard(in: size)
             }
@@ -50,49 +47,48 @@ struct TutorialOverlay: View {
         )
         .shadow(color: Color.mAccent.opacity(0.45), radius: 8)
         .position(x: anchor.midX, y: anchor.midY)
-        .allowsHitTesting(false)    // ring itself never blocks the UI it's highlighting
+        .allowsHitTesting(false)
     }
 
     // MARK: – Arrow + callout bubble
+    // Not @ViewBuilder — needs var/reassignment for clamping
 
-    @ViewBuilder
     private func calloutGroup(in size: CGSize) -> some View {
-        // Put callout above anchor when anchor is in the lower half of screen
         let showAbove = anchor.midY > size.height * 0.50
 
-        // Callout center X: align with anchor, clamped to screen edges
-        let calloutX = (anchor.midX)
-            .clamped(to: calloutWidth / 2 + 16 ... size.width - calloutWidth / 2 - 16)
+        let calloutX = clamp(anchor.midX,
+                             lo: calloutWidth / 2 + 16,
+                             hi: size.width - calloutWidth / 2 - 16)
 
-        // Arrow X: try to point at anchor midX, keep inside callout bounds
-        let arrowX = (anchor.midX)
-            .clamped(to: calloutX - calloutWidth / 2 + 18 ... calloutX + calloutWidth / 2 - 18)
+        let arrowX = clamp(anchor.midX,
+                           lo: calloutX - calloutWidth / 2 + 18,
+                           hi: calloutX + calloutWidth / 2 - 18)
 
-        // Arrow Y: just outside the highlight ring
         let arrowY: CGFloat = showAbove
             ? anchor.minY - ringPad - arrowH / 2 - 2
             : anchor.maxY + ringPad + arrowH / 2 + 2
 
-        // Callout center Y: clear of ring + arrow, clamped to remain on screen
-        var calloutY: CGFloat = showAbove
+        let rawCalloutY: CGFloat = showAbove
             ? anchor.minY - ringPad - arrowH - 8 - calloutEstH / 2
             : anchor.maxY + ringPad + arrowH + 8 + calloutEstH / 2
-        calloutY = calloutY.clamped(to: calloutEstH / 2 + 54 ... size.height - calloutEstH / 2 - 88)
+        let calloutY = clamp(rawCalloutY,
+                             lo: calloutEstH / 2 + 54,
+                             hi: size.height - calloutEstH / 2 - 88)
 
-        // Arrow triangle (non-interactive)
-        ArrowTip(pointsUp: !showAbove)
-            .fill(Color.mElev)
-            .frame(width: 22, height: arrowH)
-            .position(x: arrowX, y: arrowY)
-            .allowsHitTesting(false)
+        return ZStack {
+            ArrowTip(pointsUp: !showAbove)
+                .fill(Color.mElev)
+                .frame(width: 22, height: arrowH)
+                .position(x: arrowX, y: arrowY)
+                .allowsHitTesting(false)
 
-        // Callout bubble (interactive — buttons inside work normally)
-        calloutCard
-            .frame(width: calloutWidth)
-            .background(Color.mElev)
-            .cornerRadius(14)
-            .shadow(color: .black.opacity(0.28), radius: 18, x: 0, y: 4)
-            .position(x: calloutX, y: calloutY)
+            calloutCard
+                .frame(width: calloutWidth)
+                .background(Color.mElev)
+                .cornerRadius(14)
+                .shadow(color: .black.opacity(0.28), radius: 18, x: 0, y: 4)
+                .position(x: calloutX, y: calloutY)
+        }
     }
 
     private func fallbackCard(in size: CGSize) -> some View {
@@ -109,7 +105,6 @@ struct TutorialOverlay: View {
     private var calloutCard: some View {
         VStack(alignment: .leading, spacing: 10) {
 
-            // Title + step counter
             HStack(alignment: .top) {
                 Text(step.title)
                     .font(.system(size: 14, weight: .bold))
@@ -120,14 +115,12 @@ struct TutorialOverlay: View {
                     .foregroundColor(.mFaint)
             }
 
-            // Body
             Text(step.body)
                 .font(.system(size: 13))
                 .foregroundColor(.mMuted)
                 .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
 
-            // Progress bar
             GeometryReader { g in
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 2).fill(Color.mLine).frame(height: 2)
@@ -142,7 +135,6 @@ struct TutorialOverlay: View {
             }
             .frame(height: 2)
 
-            // Navigation buttons
             HStack(spacing: 8) {
                 Button("Skip") { tutorial.dismiss() }
                     .font(.system(size: 12))
@@ -172,6 +164,12 @@ struct TutorialOverlay: View {
         }
         .padding(14)
     }
+
+    // MARK: – Clamp helper
+
+    private func clamp(_ v: CGFloat, lo: CGFloat, hi: CGFloat) -> CGFloat {
+        min(max(v, lo), hi)
+    }
 }
 
 // MARK: – Arrow tip shape
@@ -191,13 +189,5 @@ struct ArrowTip: Shape {
         }
         p.closeSubpath()
         return p
-    }
-}
-
-// MARK: – Clamp helper
-
-private extension Comparable {
-    func clamped(to range: ClosedRange<Self>) -> Self {
-        min(max(self, range.lowerBound), range.upperBound)
     }
 }
