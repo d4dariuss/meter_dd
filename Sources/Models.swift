@@ -40,10 +40,11 @@ struct AppSettings: Codable {
 }
 
 struct AppData: Codable {
-    var offers: [Offer]       = []
-    var shifts: [Shift]       = []
-    var lastExportLen: Int    = 0
-    var settings: AppSettings = AppSettings()
+    var offers: [Offer]                  = []
+    var shifts: [Shift]                  = []
+    var lastExportLen: Int               = 0
+    var settings: AppSettings            = AppSettings()
+    var merchantNotes: [String: String]  = [:]   // lowercased merchant name → note
 }
 
 struct AggResult {

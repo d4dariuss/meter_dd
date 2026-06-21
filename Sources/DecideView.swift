@@ -4,52 +4,47 @@ struct DecideView: View {
     @EnvironmentObject var store:   AppState
     @EnvironmentObject var tracker: LocationTracker
 
-    @State private var payStr:    String = ""
-    @State private var miStr:     String = ""
-    @State private var minStr:    String = ""
-    @State private var merchant:  String = ""
-    @State private var zone:      String = ""
-    @State private var odoStr:    String = ""
-    @State private var now:       Date   = Date()
+    @State private var payStr:   String = ""
+    @State private var miStr:    String = ""
+    @State private var minStr:   String = ""
+    @State private var merchant: String = ""
+    @State private var zone:     String = ""
+    @State private var odoStr:   String = ""
+    @State private var now:      Date   = Date()
 
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     // MARK: – Derived values
 
-    private var pay:   Double? { Double(payStr)  }
-    private var miles: Double? { Double(miStr)   }
-    private var mins:  Double? { Double(minStr)  }
+    private var pay:   Double? { Double(payStr) }
+    private var miles: Double? { Double(miStr)  }
+    private var mins:  Double? { Double(minStr) }
 
     private var dpm: Double {
         guard let p = pay, let m = miles, m > 0 else { return .nan }
         return p / m
     }
-
     private var lv: String {
         guard let p = pay, let m = miles else { return "none" }
         return Calculations.level(dpm: Calculations.dpm(pay: p, miles: m), pay: p, s: store.settings)
     }
-
     private var netOff: Double? {
         guard let p = pay, let m = miles else { return nil }
         return Calculations.netOffer(pay: p, miles: m, cpm: store.settings.cpm)
     }
-
     private var nph: Double? {
         guard let p = pay, let m = miles, let mn = mins else { return nil }
         return Calculations.netHr(pay: p, miles: m, mins: mn, cpm: store.settings.cpm)
     }
-
     private var canDecide: Bool { pay != nil && miles != nil }
 
-    private var merchantWait: Double? {
+    // Merchant history for pre-accept intel
+    private var merchantHistory: MerchantStat? {
         let key = merchant.trimmingCharacters(in: .whitespaces).lowercased()
         guard !key.isEmpty else { return nil }
-        let stats = Calculations.merchantStats(offers: store.data.offers) {
+        return Calculations.merchantStats(offers: store.data.offers) {
             $0.merchant.lowercased() == key
-        }
-        guard let med = stats.first?.medWait, med.isFinite else { return nil }
-        return med
+        }.first
     }
 
     private var todayAgg: AggResult {
@@ -75,19 +70,17 @@ struct DecideView: View {
                 // AR header
                 arHeader
 
-                // Gauge
-                gaugeCard
+                // Active order OR normal gauge+inputs
+                if let active = store.activeOffer {
+                    ActiveOrderCard(offer: active, now: now)
+                } else {
+                    gaugeCard
+                    inputCard
+                    actionButtons
+                    undoMissedRow
+                }
 
-                // Input
-                inputCard
-
-                // Accept / Decline
-                actionButtons
-
-                // Undo + Missed
-                undoMissedRow
-
-                // Shift clock
+                // Shift clock (always visible)
                 shiftClockCard
 
                 // Today strip
@@ -104,8 +97,8 @@ struct DecideView: View {
     // MARK: – AR header
 
     private var arHeader: some View {
-        let ar = Calculations.estAR(offers: store.offers, currentAR: store.settings.currentAR)
-        let arColor: Color = ar.valid && ar.pct >= store.settings.arFloor ? .mGreen : .mRed
+        let ar      = Calculations.estAR(offers: store.offers, currentAR: store.settings.currentAR)
+        let arColor = ar.valid && ar.pct >= store.settings.arFloor ? Color.mGreen : Color.mRed
         return HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Meter")
@@ -128,11 +121,8 @@ struct DecideView: View {
                 if ar.valid {
                     GeometryReader { geo in
                         ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(Color.mLine)
-                                .frame(height: 4)
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(arColor)
+                            RoundedRectangle(cornerRadius: 2).fill(Color.mLine).frame(height: 4)
+                            RoundedRectangle(cornerRadius: 2).fill(arColor)
                                 .frame(width: geo.size.width * min(ar.pct / 100, 1), height: 4)
                         }
                     }
@@ -165,11 +155,12 @@ struct DecideView: View {
         }
     }
 
-    // MARK: – Gauge card
+    // MARK: – Gauge card (pre-accept)
 
     private var gaugeCard: some View {
         Card {
             VStack(spacing: 14) {
+                // $/mi + verdict
                 Text(dpm.isFinite ? String(format: "$%.2f/mi", dpm) : "—")
                     .font(.system(size: 44, weight: .bold, design: .rounded))
                     .foregroundColor(levelColor(lv))
@@ -178,22 +169,25 @@ struct DecideView: View {
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(levelColor(lv))
 
+                // Metric chips
                 HStack(spacing: 10) {
                     if let n = nph {
-                        gaugeChip(label: "NET/HR",
-                                  value: String(format: "$%.0f", n),
-                                  color: n >= store.settings.hrTarget ? .mGreen : .mRed)
+                        gaugeChip("NET/HR", String(format: "$%.0f", n),
+                                  n >= store.settings.hrTarget ? .mGreen : .mRed)
                     }
                     if let net = netOff {
-                        gaugeChip(label: "NET/OFFER",
-                                  value: String(format: "$%.2f", net),
-                                  color: net >= 0 ? .mText : .mRed)
+                        gaugeChip("NET/OFFER", String(format: "$%.2f", net),
+                                  net >= 0 ? .mText : .mRed)
                     }
-                    if let w = merchantWait {
-                        gaugeChip(label: "WAIT",
-                                  value: String(format: "~%.0fm", w),
-                                  color: w >= store.settings.slowWait ? .mOrange : .mGreen)
+                    if let hist = merchantHistory, hist.waitN > 0, hist.medWait.isFinite {
+                        gaugeChip("WAIT", String(format: "~%.0fm", hist.medWait),
+                                  hist.medWait >= store.settings.slowWait ? .mOrange : .mGreen)
                     }
+                }
+
+                // Merchant history (shown when restaurant field is filled)
+                if let hist = merchantHistory {
+                    merchantIntelRow(hist)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -201,19 +195,69 @@ struct DecideView: View {
         }
     }
 
-    private func gaugeChip(label: String, value: String, color: Color) -> some View {
+    private func gaugeChip(_ label: String, _ value: String, _ color: Color) -> some View {
         VStack(spacing: 2) {
-            Text(label)
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundColor(.mFaint)
-            Text(value)
-                .font(.system(size: 15, weight: .bold))
-                .foregroundColor(color)
+            Text(label).font(.system(size: 9, weight: .semibold)).foregroundColor(.mFaint)
+            Text(value).font(.system(size: 15, weight: .bold)).foregroundColor(color)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(Color.mElev)
-        .cornerRadius(8)
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(Color.mElev).cornerRadius(8)
+    }
+
+    // Pre-accept merchant intel strip
+    private func merchantIntelRow(_ hist: MerchantStat) -> some View {
+        let confidence: String = {
+            switch hist.waitN {
+            case 10...: return "reliable"
+            case 6...:  return "useful"
+            case 3...:  return "early"
+            default:    return "weak data"
+            }
+        }()
+        let note = store.note(for: hist.name)
+
+        return VStack(alignment: .leading, spacing: 6) {
+            Color.mLine.frame(height: 1)
+                .padding(.horizontal, -20)
+
+            HStack(spacing: 6) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 11))
+                    .foregroundColor(.mFaint)
+                Text("\(hist.accCount) visit\(hist.accCount == 1 ? "" : "s")")
+                    .font(.system(size: 12)).foregroundColor(.mFaint)
+                if hist.waitN > 0 {
+                    Text("·")
+                        .foregroundColor(.mLine)
+                    Text(String(format: "avg wait %.0fm", hist.avgWait))
+                        .font(.system(size: 12))
+                        .foregroundColor(hist.avgWait >= store.settings.slowWait ? .mOrange : .mMuted)
+                    Text("·")
+                        .foregroundColor(.mLine)
+                    Text(confidence)
+                        .font(.system(size: 11))
+                        .foregroundColor(.mFaint)
+                } else {
+                    Text("· no wait data yet")
+                        .font(.system(size: 12)).foregroundColor(.mFaint)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            if !note.isEmpty {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "note.text")
+                        .font(.system(size: 11))
+                        .foregroundColor(.mAmber)
+                    Text(note)
+                        .font(.system(size: 12))
+                        .foregroundColor(.mMuted)
+                        .multilineTextAlignment(.leading)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(.horizontal, 0)
     }
 
     private var verdict: String {
@@ -230,37 +274,26 @@ struct DecideView: View {
 
     private var inputCard: some View {
         Card {
-            // Restaurant
             HStack {
                 Text("Restaurant")
-                    .font(.system(size: 14))
-                    .foregroundColor(.mMuted)
+                    .font(.system(size: 14)).foregroundColor(.mMuted)
                     .frame(width: 90, alignment: .leading)
                 TextField("name", text: $merchant)
-                    .font(.system(size: 15))
-                    .foregroundColor(.mText)
-                    .submitLabel(.done)
+                    .font(.system(size: 15)).foregroundColor(.mText).submitLabel(.done)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 11)
+            .padding(.horizontal, 16).padding(.vertical, 11)
 
             MLine()
 
-            // Zone
             HStack {
                 Text("Zone")
-                    .font(.system(size: 14))
-                    .foregroundColor(.mMuted)
+                    .font(.system(size: 14)).foregroundColor(.mMuted)
                     .frame(width: 90, alignment: .leading)
                 TextField("area / market", text: $zone)
-                    .font(.system(size: 15))
-                    .foregroundColor(.mText)
-                    .submitLabel(.done)
+                    .font(.system(size: 15)).foregroundColor(.mText).submitLabel(.done)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 11)
+            .padding(.horizontal, 16).padding(.vertical, 11)
 
-            // Recent merchant chips
             if !store.recentMerchants.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -271,38 +304,31 @@ struct DecideView: View {
                                     zone = prev.zone
                                 }
                             }
-                            .font(.system(size: 12))
-                            .foregroundColor(.mAccent)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(Color.mElev)
-                            .cornerRadius(12)
+                            .font(.system(size: 12)).foregroundColor(.mAccent)
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(Color.mElev).cornerRadius(12)
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, 16).padding(.vertical, 8)
                 }
             }
 
             MLine()
 
-            // Pay / Miles / Mins
             HStack(spacing: 0) {
-                inputCell(label: "Pay $",  text: $payStr)
+                inputCell("Pay $",  $payStr)
                 Color.mLine.frame(width: 1)
-                inputCell(label: "Miles",  text: $miStr)
+                inputCell("Miles",  $miStr)
                 Color.mLine.frame(width: 1)
-                inputCell(label: "Mins",   text: $minStr)
+                inputCell("Mins",   $minStr)
             }
             .frame(height: 68)
         }
     }
 
-    private func inputCell(label: String, text: Binding<String>) -> some View {
+    private func inputCell(_ label: String, _ text: Binding<String>) -> some View {
         VStack(spacing: 4) {
-            Text(label)
-                .font(.system(size: 11))
-                .foregroundColor(.mFaint)
+            Text(label).font(.system(size: 11)).foregroundColor(.mFaint)
             TextField("0", text: text)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.center)
@@ -316,29 +342,23 @@ struct DecideView: View {
 
     private var actionButtons: some View {
         HStack(spacing: 12) {
-            Button { logOffer("decline") } label: {
+            Button { logDecline() } label: {
                 Text("Decline")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(canDecide ? .mRed : .mFaint)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(Color.mSurface)
-                    .cornerRadius(10)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(canDecide ? Color.mRed.opacity(0.5) : Color.mLine, lineWidth: 1)
-                    )
+                    .frame(maxWidth: .infinity).padding(.vertical, 16)
+                    .background(Color.mSurface).cornerRadius(10)
+                    .overlay(RoundedRectangle(cornerRadius: 10)
+                        .stroke(canDecide ? Color.mRed.opacity(0.5) : Color.mLine, lineWidth: 1))
             }
             .disabled(!canDecide)
 
-            Button { logOffer("accept") } label: {
+            Button { logAccept() } label: {
                 Text("Accept")
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(canDecide ? .white : .mFaint)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(canDecide ? levelColor(lv) : Color.mElev)
-                    .cornerRadius(10)
+                    .frame(maxWidth: .infinity).padding(.vertical, 16)
+                    .background(canDecide ? levelColor(lv) : Color.mElev).cornerRadius(10)
             }
             .disabled(!canDecide)
         }
@@ -352,29 +372,18 @@ struct DecideView: View {
                 store.undoLast()
             } label: {
                 Label("Undo last", systemImage: "arrow.uturn.backward")
-                    .font(.system(size: 13))
-                    .foregroundColor(.mMuted)
-                    .padding(.vertical, 10)
-                    .padding(.horizontal, 14)
-                    .background(Color.mSurface)
-                    .cornerRadius(8)
+                    .font(.system(size: 13)).foregroundColor(.mMuted)
+                    .padding(.vertical, 10).padding(.horizontal, 14)
+                    .background(Color.mSurface).cornerRadius(8)
             }
-
             Spacer()
-
-            Text("Missed?")
-                .font(.system(size: 13))
-                .foregroundColor(.mFaint)
-
+            Text("Missed?").font(.system(size: 13)).foregroundColor(.mFaint)
             Button("+ dec") { logMissed("decline") }
-                .font(.system(size: 13))
-                .foregroundColor(.mRed)
+                .font(.system(size: 13)).foregroundColor(.mRed)
                 .padding(.vertical, 8).padding(.horizontal, 10)
                 .background(Color.mSurface).cornerRadius(8)
-
             Button("+ acc") { logMissed("accept") }
-                .font(.system(size: 13))
-                .foregroundColor(.mGreen)
+                .font(.system(size: 13)).foregroundColor(.mGreen)
                 .padding(.vertical, 8).padding(.horizontal, 10)
                 .background(Color.mSurface).cornerRadius(8)
         }
@@ -387,25 +396,19 @@ struct DecideView: View {
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("SHIFT CLOCK")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundColor(.mFaint)
-
+                        .font(.system(size: 11, weight: .semibold)).foregroundColor(.mFaint)
                     if let start = store.activeShift {
                         Text(fmtDuration(now.timeIntervalSince(start)))
                             .font(.system(size: 26, weight: .bold, design: .monospaced))
                             .foregroundColor(.mText)
                         Text("since \(start, style: .time)")
-                            .font(.system(size: 12))
-                            .foregroundColor(.mMuted)
+                            .font(.system(size: 12)).foregroundColor(.mMuted)
                     } else {
                         Text("Not clocked in")
-                            .font(.system(size: 15))
-                            .foregroundColor(.mMuted)
+                            .font(.system(size: 15)).foregroundColor(.mMuted)
                     }
                 }
-
                 Spacer()
-
                 VStack(spacing: 8) {
                     Button(store.activeShift == nil ? "Clock In" : "Clock Out") {
                         if store.activeShift == nil {
@@ -417,20 +420,15 @@ struct DecideView: View {
                     }
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(store.activeShift == nil ? .mAccent : .mOrange)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 9)
+                    .padding(.horizontal, 16).padding(.vertical, 9)
                     .background((store.activeShift == nil ? Color.mAccent : Color.mOrange).opacity(0.15))
                     .cornerRadius(8)
 
                     HStack(spacing: 6) {
-                        Text("Odo:")
-                            .font(.system(size: 12))
-                            .foregroundColor(.mFaint)
+                        Text("Odo:").font(.system(size: 12)).foregroundColor(.mFaint)
                         TextField("mi", text: $odoStr)
                             .keyboardType(.decimalPad)
-                            .font(.system(size: 13))
-                            .foregroundColor(.mText)
-                            .frame(width: 70)
+                            .font(.system(size: 13)).foregroundColor(.mText).frame(width: 70)
                     }
                 }
             }
@@ -444,39 +442,45 @@ struct DecideView: View {
         let a   = todayAgg
         let rhr = store.realHr(todayOnly: true)
         return HStack(spacing: 0) {
-            stripItem(label: "orders",    value: "\(a.acc)")
+            stripItem("orders",    "\(a.acc)")
             Color.mLine.frame(width: 1)
-            stripItem(label: "net today", value: a.gross > 0 ? fmt(a.net, prefix: "$") : "—")
+            stripItem("net today", a.gross > 0 ? fmt(a.net, prefix: "$") : "—")
             Color.mLine.frame(width: 1)
-            stripItem(label: "real $/hr", value: fmt(rhr.isFinite ? rhr : nil, prefix: "$"))
+            stripItem("real $/hr", fmt(rhr.isFinite ? rhr : nil, prefix: "$"))
         }
         .frame(height: 58)
         .background(Color.mSurface)
         .cornerRadius(10)
     }
 
-    private func stripItem(label: String, value: String) -> some View {
+    private func stripItem(_ label: String, _ value: String) -> some View {
         VStack(spacing: 3) {
-            Text(value)
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.mText)
-            Text(label)
-                .font(.system(size: 11))
-                .foregroundColor(.mFaint)
+            Text(value).font(.system(size: 18, weight: .bold)).foregroundColor(.mText)
+            Text(label).font(.system(size: 11)).foregroundColor(.mFaint)
         }
         .frame(maxWidth: .infinity)
     }
 
     // MARK: – Actions
 
-    private func logOffer(_ decision: String) {
+    private func logAccept() {
         guard let p = pay, let m = miles else { return }
         var o = Offer()
-        o.pay      = p
-        o.miles    = m
-        o.mins     = mins
-        o.dpm      = Calculations.dpm(pay: p, miles: m)
-        o.decision = decision
+        o.pay = p; o.miles = m; o.mins = mins
+        o.dpm = Calculations.dpm(pay: p, miles: m)
+        o.decision = "accept"
+        o.merchant = merchant.trimmingCharacters(in: .whitespaces)
+        o.zone     = zone.trimmingCharacters(in: .whitespaces)
+        store.acceptOffer(o)   // starts drive timer, sets activeOffer
+        clearInputs()
+    }
+
+    private func logDecline() {
+        guard let p = pay, let m = miles else { return }
+        var o = Offer()
+        o.pay = p; o.miles = m; o.mins = mins
+        o.dpm = Calculations.dpm(pay: p, miles: m)
+        o.decision = "decline"
         o.merchant = merchant.trimmingCharacters(in: .whitespaces)
         o.zone     = zone.trimmingCharacters(in: .whitespaces)
         store.addOffer(o)
@@ -485,8 +489,7 @@ struct DecideView: View {
 
     private func logMissed(_ decision: String) {
         var o = Offer()
-        o.decision = decision
-        o.missed   = true
+        o.decision = decision; o.missed = true
         o.merchant = merchant.trimmingCharacters(in: .whitespaces)
         o.zone     = zone.trimmingCharacters(in: .whitespaces)
         store.addOffer(o)
@@ -499,16 +502,223 @@ struct DecideView: View {
 
     private func shareJSON() {
         guard let data = store.exportJSON() else { return }
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("meter_backup.json")
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("meter_backup.json")
         try? data.write(to: url)
-        presentShare(url)
-    }
-
-    private func presentShare(_ url: URL) {
         let vc = UIActivityViewController(activityItems: [url], applicationActivities: nil)
         guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let root  = scene.windows.first?.rootViewController else { return }
         root.present(vc, animated: true)
+    }
+}
+
+// MARK: – Active order card
+
+struct ActiveOrderCard: View {
+    @EnvironmentObject var store: AppState
+    var offer: Offer
+    var now: Date
+
+    @State private var noteText: String = ""
+    @State private var noteSaved: Bool  = false
+
+    // Phase: 0=driving 1=at store/waiting 2=done
+    private var phase: Int {
+        if offer.wait != nil { return 2 }
+        if offer.waitStart != nil { return 1 }
+        return 0
+    }
+
+    private var dpm: Double {
+        guard let p = offer.pay, let m = offer.miles, m > 0 else { return .nan }
+        return p / m
+    }
+    private var lv: String {
+        guard let p = offer.pay, let m = offer.miles else { return "none" }
+        return Calculations.level(dpm: dpm, pay: p, s: store.settings)
+    }
+
+    var body: some View {
+        Card {
+            VStack(spacing: 0) {
+                // Header
+                HStack {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("ACTIVE ORDER")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.mAccent)
+                        HStack(spacing: 8) {
+                            if !offer.merchant.isEmpty {
+                                Text(offer.merchant)
+                                    .font(.system(size: 17, weight: .semibold))
+                                    .foregroundColor(.mText)
+                            }
+                            if !offer.zone.isEmpty {
+                                Text(offer.zone)
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.mFaint)
+                            }
+                        }
+                        HStack(spacing: 8) {
+                            if let p = offer.pay {
+                                Text(String(format: "$%.2f", p))
+                                    .font(.system(size: 14, weight: .medium))
+                                    .foregroundColor(.mText)
+                            }
+                            if let m = offer.miles {
+                                Text(String(format: "%.1f mi", m))
+                                    .font(.system(size: 13))
+                                    .foregroundColor(.mMuted)
+                            }
+                            if dpm.isFinite {
+                                Text(String(format: "$%.2f/mi", dpm))
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundColor(levelColor(lv))
+                            }
+                        }
+                    }
+                    Spacer()
+                    Button {
+                        store.cancelActiveOrder()
+                    } label: {
+                        Text("Skip timers")
+                            .font(.system(size: 12))
+                            .foregroundColor(.mFaint)
+                    }
+                }
+                .padding(16)
+
+                MLine()
+
+                // Drive phase
+                if phase == 0 {
+                    phaseRow(
+                        icon: "car.fill",
+                        color: .mAccent,
+                        label: "Driving to pickup",
+                        elapsed: offer.driveStart.map { now.timeIntervalSince($0) },
+                        buttonLabel: "At Store →",
+                        buttonColor: .mAmber
+                    ) {
+                        store.markAtStore()
+                    }
+                }
+
+                // Wait phase
+                if phase == 1 {
+                    if let dm = offer.driveMin {
+                        HStack(spacing: 6) {
+                            Image(systemName: "car.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.mGreen)
+                            Text(String(format: "Drive: %.1f min", dm))
+                                .font(.system(size: 13))
+                                .foregroundColor(.mGreen)
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 12))
+                                .foregroundColor(.mGreen)
+                        }
+                        .padding(.horizontal, 16).padding(.vertical, 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        MLine()
+                    }
+                    phaseRow(
+                        icon: "figure.stand",
+                        color: .mOrange,
+                        label: "Waiting for food",
+                        elapsed: offer.waitStart.map { now.timeIntervalSince($0) },
+                        buttonLabel: "Got Food →",
+                        buttonColor: .mGreen
+                    ) {
+                        store.markGotFood()
+                    }
+                }
+
+                // Done (shouldn't normally render since activeOffer is cleared)
+                if phase == 2 {
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundColor(.mGreen)
+                        Text("Order complete")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(.mGreen)
+                    }
+                    .padding(16)
+                }
+
+                MLine()
+
+                // Notes for this merchant
+                notesSection
+            }
+        }
+    }
+
+    private func phaseRow(icon: String, color: Color, label: String,
+                          elapsed: TimeInterval?, buttonLabel: String,
+                          buttonColor: Color, action: @escaping () -> Void) -> some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: icon)
+                        .font(.system(size: 13))
+                        .foregroundColor(color)
+                    Text(label)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(color)
+                }
+                if let elapsed = elapsed {
+                    Text(fmtDuration(elapsed))
+                        .font(.system(size: 32, weight: .bold, design: .monospaced))
+                        .foregroundColor(.mText)
+                }
+            }
+            Spacer()
+            Button(action: action) {
+                Text(buttonLabel)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16).padding(.vertical, 10)
+                    .background(buttonColor)
+                    .cornerRadius(10)
+            }
+        }
+        .padding(16)
+    }
+
+    private var notesSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                Image(systemName: "note.text")
+                    .font(.system(size: 12))
+                    .foregroundColor(.mAmber)
+                Text(offer.merchant.isEmpty ? "Store notes" : "Notes for \(offer.merchant)")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.mMuted)
+                Spacer()
+                if noteSaved {
+                    Text("Saved")
+                        .font(.system(size: 11))
+                        .foregroundColor(.mGreen)
+                }
+            }
+
+            TextField("parking, entrance, tip history, anything useful...", text: $noteText, axis: .vertical)
+                .font(.system(size: 14))
+                .foregroundColor(.mText)
+                .lineLimit(2...4)
+                .onSubmit { saveNote() }
+                .onChange(of: noteText) { _ in saveNote() }
+        }
+        .padding(16)
+        .onAppear {
+            noteText = offer.merchant.isEmpty ? "" : store.note(for: offer.merchant)
+        }
+    }
+
+    private func saveNote() {
+        guard !offer.merchant.isEmpty else { return }
+        store.setNote(for: offer.merchant, note: noteText)
+        noteSaved = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { noteSaved = false }
     }
 }

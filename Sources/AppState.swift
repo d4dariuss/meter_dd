@@ -3,9 +3,12 @@ import SwiftUI
 
 class AppState: ObservableObject {
 
-    @Published var data: AppData = AppData()
-    @Published var activeShift: Date? = nil
+    @Published var data: AppData          = AppData()
+    @Published var activeShift: Date?     = nil
     @Published var activeOdoStart: Double? = nil
+
+    // The currently in-progress accepted offer (not persisted across launches)
+    @Published var activeOffer: Offer?    = nil
 
     private static var dataURL: URL {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -38,6 +41,15 @@ class AppState: ObservableObject {
 
     // MARK: – Offer mutations
 
+    // Accepts an offer and immediately starts the drive timer
+    func acceptOffer(_ o: Offer) {
+        var live = o
+        live.driveStart = Date()
+        data.offers.append(live)
+        activeOffer = live
+        save()
+    }
+
     func addOffer(_ o: Offer) {
         data.offers.append(o)
         save()
@@ -57,6 +69,48 @@ class AppState: ObservableObject {
     func undoLast() {
         guard !data.offers.isEmpty else { return }
         data.offers.removeLast()
+        activeOffer = nil
+        save()
+    }
+
+    // MARK: – Active order state machine
+
+    func markAtStore() {
+        guard var o = activeOffer else { return }
+        if let ds = o.driveStart {
+            o.driveMin = Date().timeIntervalSince(ds) / 60
+        }
+        o.waitStart = Date()
+        activeOffer = o
+        updateOffer(o)
+    }
+
+    func markGotFood() {
+        guard var o = activeOffer else { return }
+        if let ws = o.waitStart {
+            o.wait = Date().timeIntervalSince(ws) / 60
+        }
+        updateOffer(o)
+        activeOffer = nil
+    }
+
+    func cancelActiveOrder() {
+        activeOffer = nil
+    }
+
+    // MARK: – Merchant notes
+
+    func note(for merchant: String) -> String {
+        data.merchantNotes[merchant.lowercased().trimmingCharacters(in: .whitespaces)] ?? ""
+    }
+
+    func setNote(for merchant: String, note: String) {
+        let key = merchant.lowercased().trimmingCharacters(in: .whitespaces)
+        if note.trimmingCharacters(in: .whitespaces).isEmpty {
+            data.merchantNotes.removeValue(forKey: key)
+        } else {
+            data.merchantNotes[key] = note
+        }
         save()
     }
 

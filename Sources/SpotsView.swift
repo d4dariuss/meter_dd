@@ -84,6 +84,9 @@ struct SpotRow: View {
     @EnvironmentObject var store: AppState
     let stat: MerchantStat
 
+    @State private var noteText: String = ""
+    @State private var editingNote: Bool = false
+
     private var pill: (label: String, color: Color) {
         let med = stat.medWait
         guard med.isFinite else { return ("—", .mFaint) }
@@ -148,10 +151,60 @@ struct SpotRow: View {
                         .font(.system(size: 12)).foregroundColor(.mFaint)
                 }
             }
+
+            // Notes row
+            noteRow
         }
         .padding(12)
         .background(Color.mSurface)
         .cornerRadius(10)
+        .onAppear { noteText = store.note(for: stat.name) }
+    }
+
+    @ViewBuilder
+    private var noteRow: some View {
+        if editingNote {
+            HStack(alignment: .top, spacing: 8) {
+                Image(systemName: "note.text")
+                    .font(.system(size: 12))
+                    .foregroundColor(.mAmber)
+                    .padding(.top, 2)
+                TextField("parking, entrance, tip history...", text: $noteText, axis: .vertical)
+                    .font(.system(size: 13))
+                    .foregroundColor(.mText)
+                    .lineLimit(2...4)
+                Button("Done") {
+                    store.setNote(for: stat.name, note: noteText)
+                    editingNote = false
+                }
+                .font(.system(size: 12))
+                .foregroundColor(.mAccent)
+            }
+            .padding(.top, 4)
+        } else {
+            HStack(spacing: 8) {
+                Image(systemName: "note.text")
+                    .font(.system(size: 12))
+                    .foregroundColor(noteText.isEmpty ? .mLine : .mAmber)
+                if noteText.isEmpty {
+                    Text("Add note")
+                        .font(.system(size: 12))
+                        .foregroundColor(.mFaint)
+                } else {
+                    Text(noteText)
+                        .font(.system(size: 12))
+                        .foregroundColor(.mMuted)
+                        .lineLimit(2)
+                }
+                Spacer()
+                Button(noteText.isEmpty ? "Add" : "Edit") {
+                    editingNote = true
+                }
+                .font(.system(size: 12))
+                .foregroundColor(.mAccent)
+            }
+            .padding(.top, 4)
+        }
     }
 
     private var waitLine: String {
