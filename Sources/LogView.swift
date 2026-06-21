@@ -29,6 +29,7 @@ struct LogView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.mSurface, for: .navigationBar)
             .toolbarColorScheme(.dark, for: .navigationBar)
+            .tutorialAnchor("log-header")
         }
         .onReceive(ticker) { _ in now = Date() }
     }
@@ -179,6 +180,7 @@ struct OfferRow: View {
                     .cornerRadius(6)
             }
         }
+        .tutorialAnchor("log-final-pay")
     }
 
     private func saveFinalPay() {

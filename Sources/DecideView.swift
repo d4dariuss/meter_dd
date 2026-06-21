@@ -75,13 +75,17 @@ struct DecideView: View {
                     ActiveOrderCard(offer: active, now: now)
                 } else {
                     gaugeCard
+                        .tutorialAnchor("gauge")
                     inputCard
                     actionButtons
+                        .tutorialAnchor("accept-decline")
                     undoMissedRow
+                        .tutorialAnchor("missed-row")
                 }
 
                 // Shift clock (always visible)
                 shiftClockCard
+                    .tutorialAnchor("shift-clock")
 
                 // Today strip
                 todayStrip
@@ -135,6 +139,7 @@ struct DecideView: View {
             }
         }
         .padding(.horizontal, 4)
+        .tutorialAnchor("ar-header")
     }
 
     // MARK: – Backup banner
@@ -274,25 +279,28 @@ struct DecideView: View {
 
     private var inputCard: some View {
         Card {
-            HStack {
-                Text("Restaurant")
-                    .font(.system(size: 14)).foregroundColor(.mMuted)
-                    .frame(width: 90, alignment: .leading)
-                TextField("name", text: $merchant)
-                    .font(.system(size: 15)).foregroundColor(.mText).submitLabel(.done)
-            }
-            .padding(.horizontal, 16).padding(.vertical, 11)
+            VStack(spacing: 0) {
+                HStack {
+                    Text("Restaurant")
+                        .font(.system(size: 14)).foregroundColor(.mMuted)
+                        .frame(width: 90, alignment: .leading)
+                    TextField("name", text: $merchant)
+                        .font(.system(size: 15)).foregroundColor(.mText).submitLabel(.done)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 11)
 
-            MLine()
+                MLine()
 
-            HStack {
-                Text("Zone")
-                    .font(.system(size: 14)).foregroundColor(.mMuted)
-                    .frame(width: 90, alignment: .leading)
-                TextField("area / market", text: $zone)
-                    .font(.system(size: 15)).foregroundColor(.mText).submitLabel(.done)
+                HStack {
+                    Text("Zone")
+                        .font(.system(size: 14)).foregroundColor(.mMuted)
+                        .frame(width: 90, alignment: .leading)
+                    TextField("area / market", text: $zone)
+                        .font(.system(size: 15)).foregroundColor(.mText).submitLabel(.done)
+                }
+                .padding(.horizontal, 16).padding(.vertical, 11)
             }
-            .padding(.horizontal, 16).padding(.vertical, 11)
+            .tutorialAnchor("restaurant-zone")
 
             if !store.recentMerchants.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -323,6 +331,7 @@ struct DecideView: View {
                 inputCell("Mins",   $minStr)
             }
             .frame(height: 68)
+            .tutorialAnchor("input-grid")
         }
     }
 

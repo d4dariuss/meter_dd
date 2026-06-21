@@ -37,6 +37,7 @@ struct StatsView: View {
                     }
                     .pickerStyle(.segmented)
                     .padding(16)
+                    .tutorialAnchor("stats-scope")
 
                     // Stats table
                     Card {
@@ -124,6 +125,7 @@ struct StatsView: View {
         MLine()
         StatRow(label: "Real $/hr (shift)", value: fmt(rhr.isFinite ? rhr : nil, prefix: "$"),
                 highlight: rhr.isFinite ? (rhr >= store.settings.hrTarget ? .mGreen : .mOrange) : nil)
+            .tutorialAnchor("stats-real-hr")
 
         if !isToday {
             MLine()

@@ -15,12 +15,14 @@
 		3C7880EF18D619D869A71FB8 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCDF5AA38D6F3892B5CE3FD5 /* Components.swift */; };
 		41337B78CB978A48FF231412 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFFD93D4794303DE4C12D9C1 /* Theme.swift */; };
 		6C6B21C52597C3483EB870BE /* LocationTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B265591EC8C616961E202E3 /* LocationTracker.swift */; };
+		6F24995CF094F31AD51BCF97 /* TutorialManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD71B3CFCB55976604B09A98 /* TutorialManager.swift */; };
 		78C2135CB854562C7540C15B /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14D72A54E116EB0DBB027DE8 /* AppState.swift */; };
 		7AE0FB1E22D2B8B67169153B /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22F0C4AAF4A439963031D903 /* LogView.swift */; };
 		89F82DA08F4C6840AD173535 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70575D455AF60DD7C4697B2C /* Models.swift */; };
 		8B122D852662BF9EBB159D45 /* MeterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27412859649A7A8673A20DE7 /* MeterApp.swift */; };
 		B5BE2042A97E7E79728FAA4F /* meter.html in Resources */ = {isa = PBXBuildFile; fileRef = B8D1B9A13E6642F2E63654C9 /* meter.html */; };
 		C37C87CF0E6A14C36C089221 /* DecideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B786D69E23A7BF0A634CFC0F /* DecideView.swift */; };
+		DC86CBA0A194B8D0166554C3 /* TutorialOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB625AD59778273F013D14D8 /* TutorialOverlay.swift */; };
 		E5473839D957008F7F434DA2 /* Calculations.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F61FF4A377F7943C8B3F294 /* Calculations.swift */; };
 		EED9D22C508E494A5D88BE22 /* TutorialView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DC8400DD3C88666759D606E /* TutorialView.swift */; };
 /* End PBXBuildFile section */
@@ -39,8 +41,10 @@
 		7744BD3B367383BC791FD38A /* Meter.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Meter.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8DC8400DD3C88666759D606E /* TutorialView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorialView.swift; sourceTree = "<group>"; };
 		A65E72176932BC41F4D9511B /* StatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsView.swift; sourceTree = "<group>"; };
+		AD71B3CFCB55976604B09A98 /* TutorialManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorialManager.swift; sourceTree = "<group>"; };
 		B786D69E23A7BF0A634CFC0F /* DecideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecideView.swift; sourceTree = "<group>"; };
 		B8D1B9A13E6642F2E63654C9 /* meter.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = meter.html; sourceTree = "<group>"; };
+		BB625AD59778273F013D14D8 /* TutorialOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TutorialOverlay.swift; sourceTree = "<group>"; };
 		BFFD93D4794303DE4C12D9C1 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		CCDF5AA38D6F3892B5CE3FD5 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -62,6 +66,8 @@
 				3B94935B2AF95D0C01D28A16 /* SpotsView.swift */,
 				A65E72176932BC41F4D9511B /* StatsView.swift */,
 				BFFD93D4794303DE4C12D9C1 /* Theme.swift */,
+				AD71B3CFCB55976604B09A98 /* TutorialManager.swift */,
+				BB625AD59778273F013D14D8 /* TutorialOverlay.swift */,
 				8DC8400DD3C88666759D606E /* TutorialView.swift */,
 			);
 			path = Sources;
@@ -174,6 +180,8 @@
 				101E62F8F618D797DE7D8A79 /* SpotsView.swift in Sources */,
 				1A6425EBA1B51B6757BE037A /* StatsView.swift in Sources */,
 				41337B78CB978A48FF231412 /* Theme.swift in Sources */,
+				6F24995CF094F31AD51BCF97 /* TutorialManager.swift in Sources */,
+				DC86CBA0A194B8D0166554C3 /* TutorialOverlay.swift in Sources */,
 				EED9D22C508E494A5D88BE22 /* TutorialView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

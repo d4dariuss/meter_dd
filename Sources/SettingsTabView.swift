@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct SettingsTabView: View {
-    @EnvironmentObject var store: AppState
-    @AppStorage("hasSeenTutorial") private var hasSeenTutorial = false
+    @EnvironmentObject var store:    AppState
+    @EnvironmentObject var tutorial: TutorialManager
     @State private var s:    AppSettings = AppSettings()
     @State private var saved: Bool       = false
 
@@ -24,6 +24,7 @@ struct SettingsTabView: View {
                         settingRow("Target net $/hr", $s.hrTarget, decimals: 0)
                     }
                     .padding(.horizontal, 16)
+                    .tutorialAnchor("settings-thresholds")
 
                     SectionHeader(title: "Your numbers")
                     Card {
@@ -38,6 +39,7 @@ struct SettingsTabView: View {
                         settingRow("Slow wait flag (min)",    $s.slowWait,  decimals: 0)
                     }
                     .padding(.horizontal, 16)
+                    .tutorialAnchor("settings-ar")
 
                     // Save confirmation
                     if saved {
@@ -53,7 +55,7 @@ struct SettingsTabView: View {
 
                     // Replay tutorial
                     Button {
-                        hasSeenTutorial = false
+                        tutorial.start()
                     } label: {
                         Label("Replay Tutorial", systemImage: "questionmark.circle")
                             .font(.system(size: 14))

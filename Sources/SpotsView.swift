@@ -36,6 +36,7 @@ struct SpotsView: View {
                     .listStyle(.plain)
                     .background(Color.mBg)
                     .scrollContentBackground(.hidden)
+                    .tutorialAnchor("spots-list")
                 }
             }
             .background(Color.mBg.ignoresSafeArea())
@@ -58,6 +59,7 @@ struct SpotsView: View {
             .padding(.vertical, 10)
         }
         .background(Color.mSurface)
+        .tutorialAnchor("spots-filter")
     }
 
     private var emptyState: some View {
