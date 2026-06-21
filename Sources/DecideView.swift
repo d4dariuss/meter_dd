@@ -98,7 +98,6 @@ struct DecideView: View {
             .padding(.horizontal, 16)
         }
         .background(Color.mBg.ignoresSafeArea())
-        .withKeyboardDoneButton()
         .onReceive(ticker) { _ in now = Date() }
     }
 
@@ -282,70 +281,74 @@ struct DecideView: View {
     // MARK: – Input card
 
     private var inputCard: some View {
-        Card {
-            VStack(spacing: 0) {
-                HStack {
-                    Text("Restaurant")
-                        .font(.system(size: 14)).foregroundColor(.mMuted)
-                        .frame(width: 90, alignment: .leading)
-                    TextField("name", text: $merchant)
-                        .font(.system(size: 15)).foregroundColor(.mText).submitLabel(.done)
-                }
-                .padding(.horizontal, 16).padding(.vertical, 11)
-
-                MLine()
-
-                HStack {
-                    Text("Zone")
-                        .font(.system(size: 14)).foregroundColor(.mMuted)
-                        .frame(width: 90, alignment: .leading)
-                    TextField("area / market", text: $zone)
-                        .font(.system(size: 15)).foregroundColor(.mText).submitLabel(.done)
-                }
-                .padding(.horizontal, 16).padding(.vertical, 11)
-            }
-            .tutorialAnchor("restaurant-zone")
-
-            if !store.recentMerchants.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(store.recentMerchants, id: \.self) { m in
-                            Button(m) {
-                                merchant = m
-                                if let prev = store.offers.last(where: { $0.merchant == m }) {
-                                    zone = prev.zone
-                                }
-                            }
-                            .font(.system(size: 12)).foregroundColor(.mAccent)
-                            .padding(.horizontal, 10).padding(.vertical, 5)
-                            .background(Color.mElev).cornerRadius(12)
-                        }
+        VStack(spacing: 8) {
+            Card {
+                VStack(spacing: 0) {
+                    HStack {
+                        Text("Restaurant")
+                            .font(.system(size: 14)).foregroundColor(.mMuted)
+                            .frame(width: 90, alignment: .leading)
+                        TextField("name", text: $merchant)
+                            .font(.system(size: 15)).foregroundColor(.mText).submitLabel(.done)
                     }
-                    .padding(.horizontal, 16).padding(.vertical, 8)
+                    .padding(.horizontal, 16).padding(.vertical, 11)
+
+                    MLine()
+
+                    HStack {
+                        Text("Zone")
+                            .font(.system(size: 14)).foregroundColor(.mMuted)
+                            .frame(width: 90, alignment: .leading)
+                        TextField("area / market", text: $zone)
+                            .font(.system(size: 15)).foregroundColor(.mText).submitLabel(.done)
+                    }
+                    .padding(.horizontal, 16).padding(.vertical, 11)
+                }
+                .tutorialAnchor("restaurant-zone")
+
+                if !store.recentMerchants.isEmpty {
+                    MLine()
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(store.recentMerchants, id: \.self) { m in
+                                Button(m) {
+                                    merchant = m
+                                    if let prev = store.offers.last(where: { $0.merchant == m }) {
+                                        zone = prev.zone
+                                    }
+                                }
+                                .font(.system(size: 12)).foregroundColor(.mAccent)
+                                .padding(.horizontal, 10).padding(.vertical, 5)
+                                .background(Color.mElev).cornerRadius(12)
+                            }
+                        }
+                        .padding(.horizontal, 16).padding(.vertical, 8)
+                    }
                 }
             }
 
-            MLine()
-
-            HStack(spacing: 0) {
-                inputCell("Pay $",  $payStr)
-                Color.mLine.frame(width: 1)
-                inputCell("Miles",  $miStr)
-                Color.mLine.frame(width: 1)
-                inputCell("Mins",   $minStr)
+            HStack(spacing: 8) {
+                inputCell("Pay $", $payStr)
+                inputCell("Miles", $miStr)
+                inputCell("Mins",  $minStr)
             }
-            .frame(height: 68)
             .tutorialAnchor("input-grid")
         }
     }
 
     private func inputCell(_ label: String, _ text: Binding<String>) -> some View {
-        VStack(spacing: 4) {
-            Text(label).font(.system(size: 11)).foregroundColor(.mFaint)
+        VStack(spacing: 6) {
+            Text(label)
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.mFaint)
             NumericField(text: text, placeholder: "0", alignment: .center, fontSize: 22, fontWeight: .semibold)
                 .frame(height: 30)
         }
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(Color.mSurface)
+        .cornerRadius(10)
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.mLine, lineWidth: 0.5))
     }
 
     // MARK: – Action buttons
@@ -368,7 +371,10 @@ struct DecideView: View {
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(canAccept ? .white : .mFaint)
                     .frame(maxWidth: .infinity).padding(.vertical, 16)
-                    .background(canAccept ? levelColor(lv) : Color.mElev).cornerRadius(10)
+                    .background(canAccept ? levelColor(lv) : Color.mElev)
+                    .cornerRadius(10)
+                    .overlay(RoundedRectangle(cornerRadius: 10)
+                        .stroke(canAccept ? levelColor(lv) : Color.mLine, lineWidth: 1))
             }
             .disabled(!canAccept)
         }
@@ -385,6 +391,7 @@ struct DecideView: View {
                     .font(.system(size: 13)).foregroundColor(.mMuted)
                     .padding(.vertical, 10).padding(.horizontal, 14)
                     .background(Color.mSurface).cornerRadius(8)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.mLine, lineWidth: 0.5))
             }
             Spacer()
             Text("Missed?").font(.system(size: 13)).foregroundColor(.mFaint)
@@ -392,10 +399,12 @@ struct DecideView: View {
                 .font(.system(size: 13)).foregroundColor(.mRed)
                 .padding(.vertical, 8).padding(.horizontal, 10)
                 .background(Color.mSurface).cornerRadius(8)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.mLine, lineWidth: 0.5))
             Button("+ acc") { logMissed("accept") }
                 .font(.system(size: 13)).foregroundColor(.mGreen)
                 .padding(.vertical, 8).padding(.horizontal, 10)
                 .background(Color.mSurface).cornerRadius(8)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.mLine, lineWidth: 0.5))
         }
     }
 
@@ -476,6 +485,7 @@ struct DecideView: View {
         .frame(height: 58)
         .background(Color.mSurface)
         .cornerRadius(10)
+        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.mLine, lineWidth: 0.5))
     }
 
     private func stripItem(_ label: String, _ value: String) -> some View {

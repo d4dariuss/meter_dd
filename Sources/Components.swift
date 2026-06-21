@@ -58,6 +58,7 @@ struct Card<Content: View>: View {
         VStack(alignment: .leading, spacing: 0, content: content)
             .background(Color.mSurface)
             .cornerRadius(10)
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.mLine, lineWidth: 0.5))
     }
 }
 

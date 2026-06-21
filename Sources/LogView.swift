@@ -40,7 +40,6 @@ struct LogView: View {
                 }
             }
             .background(Color.mBg.ignoresSafeArea())
-            .withKeyboardDoneButton()
             .navigationTitle("Log")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(Color.mSurface, for: .navigationBar)
