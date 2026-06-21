@@ -14,18 +14,9 @@ extension View {
         toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button {
-                    UIApplication.shared.hideKeyboard()
-                } label: {
-                    Text("Done")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.mAccent)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 6)
-                        .background(Color.mAccent.opacity(0.12))
-                        .cornerRadius(7)
-                }
-                .padding(.bottom, 8)
+                Button("Done") { UIApplication.shared.hideKeyboard() }
+                    .foregroundColor(.mAccent)
+                    .fontWeight(.semibold)
             }
         }
     }
