@@ -12,6 +12,8 @@ struct DecideView: View {
     @State private var odoStr:    String = ""
     @State private var now:       Date   = Date()
     @State private var shiftGlow: Bool   = false
+    @State private var editingAR: Bool   = false
+    @State private var arStr:     String = ""
 
     private enum InputFocus: Hashable { case merchant, zone }
     @FocusState private var inputFocus: InputFocus?
@@ -147,39 +149,96 @@ struct DecideView: View {
     private var arHeader: some View {
         let ar      = Calculations.estAR(offers: store.offers, currentAR: store.settings.currentAR)
         let arColor = ar.valid && ar.pct >= store.settings.arFloor ? Color.mGreen : Color.mRed
-        return HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Meter")
-                    .font(.system(size: 22, weight: .bold))
-                    .foregroundColor(.mText)
-                Text("offer caller")
-                    .font(.system(size: 12))
-                    .foregroundColor(.mFaint)
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 4) {
-                HStack(spacing: 8) {
-                    Text("ROLLING AR · EST")
-                        .font(.system(size: 10, weight: .semibold))
+        return VStack(alignment: .trailing, spacing: 8) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Meter")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(.mText)
+                    Text("offer caller")
+                        .font(.system(size: 12))
                         .foregroundColor(.mFaint)
-                    Text(ar.valid ? String(format: "%.0f%%", ar.pct) : "—")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(arColor)
                 }
-                if ar.valid {
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            RoundedRectangle(cornerRadius: 2).fill(Color.mLine).frame(height: 4)
-                            RoundedRectangle(cornerRadius: 2).fill(arColor)
-                                .frame(width: geo.size.width * min(ar.pct / 100, 1), height: 4)
+                Spacer()
+                // AR display — tap to open inline editor
+                Button {
+                    arStr = String(format: "%.0f", store.settings.currentAR)
+                    withAnimation(.easeInOut(duration: 0.2)) { editingAR = true }
+                } label: {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Text("ROLLING AR · EST")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundColor(.mFaint)
+                            Image(systemName: "pencil")
+                                .font(.system(size: 9))
+                                .foregroundColor(.mFaint)
+                        }
+                        Text(ar.valid ? String(format: "%.0f%%", ar.pct) : "—")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(arColor)
+                        if ar.valid {
+                            GeometryReader { geo in
+                                ZStack(alignment: .leading) {
+                                    RoundedRectangle(cornerRadius: 2).fill(Color.mLine).frame(height: 4)
+                                    RoundedRectangle(cornerRadius: 2).fill(arColor)
+                                        .frame(width: geo.size.width * min(ar.pct / 100, 1), height: 4)
+                                }
+                            }
+                            .frame(height: 4)
+                            .frame(maxWidth: 130)
+                            Text(ar.pct >= store.settings.arFloor ? "Platinum safe" : "Below floor")
+                                .font(.system(size: 10))
+                                .foregroundColor(.mFaint)
                         }
                     }
-                    .frame(height: 4)
-                    .frame(maxWidth: 130)
-                    Text(ar.pct >= store.settings.arFloor ? "Platinum safe" : "Below floor")
-                        .font(.system(size: 10))
-                        .foregroundColor(.mFaint)
                 }
+                .buttonStyle(.plain)
+            }
+
+            // Inline AR editor — shown when user taps the AR
+            if editingAR {
+                HStack(spacing: 8) {
+                    Text("Actual AR (DoorDash)")
+                        .font(.system(size: 12))
+                        .foregroundColor(.mMuted)
+                    Spacer()
+                    HStack(spacing: 4) {
+                        NumericField(text: $arStr, placeholder: "87", alignment: .center, fontSize: 16, fontWeight: .semibold)
+                            .frame(width: 48, height: 30)
+                            .background(Color.mElev)
+                            .cornerRadius(6)
+                            .cardBorder(6)
+                        Text("%")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.mMuted)
+                    }
+                    Button("Set") {
+                        if let v = Double(arStr), v >= 0, v <= 100 {
+                            var s = store.settings
+                            s.currentAR = v
+                            store.updateSettings(s)
+                        }
+                        withAnimation(.easeInOut(duration: 0.2)) { editingAR = false }
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.mAccent)
+                    .padding(.horizontal, 12).padding(.vertical, 6)
+                    .background(Color.mAccent.opacity(0.12))
+                    .cornerRadius(7)
+                    .cardBorder(7)
+
+                    Button("Cancel") {
+                        withAnimation(.easeInOut(duration: 0.2)) { editingAR = false }
+                    }
+                    .font(.system(size: 12))
+                    .foregroundColor(.mFaint)
+                }
+                .padding(12)
+                .background(Color.mSurface)
+                .cornerRadius(10)
+                .cardBorder()
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .padding(.horizontal, 4)
