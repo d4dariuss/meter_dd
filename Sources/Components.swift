@@ -20,6 +20,16 @@ extension View {
             }
         }
     }
+
+    // Consistent border overlay for any rounded container
+    func cardBorder(_ radius: CGFloat = 10) -> some View {
+        overlay(RoundedRectangle(cornerRadius: radius).stroke(Color.mLine, lineWidth: 0.5))
+    }
+
+    // Colored outline border (for banners, active states)
+    func colorBorder(_ color: Color, radius: CGFloat = 8, opacity: Double = 0.4) -> some View {
+        overlay(RoundedRectangle(cornerRadius: radius).stroke(color.opacity(opacity), lineWidth: 1))
+    }
 }
 
 // MARK: – Level color
@@ -68,7 +78,8 @@ struct SectionHeader: View {
     let title: String
     var body: some View {
         Text(title.uppercased())
-            .font(.system(size: 11, weight: .semibold))
+            .font(.system(size: 11, weight: .medium))
+            .tracking(0.5)
             .foregroundColor(.mFaint)
             .padding(.horizontal, 16)
             .padding(.top, 20)
@@ -90,12 +101,13 @@ struct Badge: View {
     let color: Color
     var body: some View {
         Text(text)
-            .font(.system(size: 11, weight: .bold))
+            .font(.system(size: 10, weight: .bold))
             .foregroundColor(color)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(color.opacity(0.15))
-            .cornerRadius(4)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(color.opacity(0.12))
+            .cornerRadius(5)
+            .overlay(RoundedRectangle(cornerRadius: 5).stroke(color.opacity(0.3), lineWidth: 0.5))
     }
 }
 
@@ -112,8 +124,10 @@ struct Chip: View {
                 .foregroundColor(active ? .mAccent : .mMuted)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(active ? Color.mAccent.opacity(0.15) : Color.mElev)
+                .background(active ? Color.mAccent.opacity(0.1) : Color.mElev)
                 .cornerRadius(14)
+                .overlay(RoundedRectangle(cornerRadius: 14)
+                    .stroke(active ? Color.mAccent.opacity(0.5) : Color.mLine, lineWidth: 0.5))
         }
     }
 }
@@ -139,7 +153,7 @@ struct StatRow: View {
     }
 }
 
-// MARK: – Live elapsed timer (isolated ticker — only this Text re-renders each second)
+// MARK: – Live elapsed timer (isolated ticker)
 
 struct LiveTimer: View {
     let since: Date
@@ -298,7 +312,7 @@ struct GpsPill: View {
         HStack(spacing: 8) {
             Circle()
                 .fill(tracker.isTracking ? Color.mGreen : Color.mFaint)
-                .frame(width: 8, height: 8)
+                .frame(width: 7, height: 7)
             Text(String(format: "GPS %.2f mi", miles))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.mText)
@@ -315,9 +329,10 @@ struct GpsPill: View {
             .font(.system(size: 12, weight: .semibold))
             .foregroundColor(.mAccent)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 7)
         .background(Color.mElev)
         .cornerRadius(20)
+        .cardBorder(20)
     }
 }

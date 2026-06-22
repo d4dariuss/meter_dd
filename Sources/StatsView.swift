@@ -52,7 +52,7 @@ struct StatsView: View {
                     }
                     .padding(.horizontal, 16)
 
-                    Text("Meter v2.4.1 · native iOS · your data stays on this device")
+                    Text("Meter v2.5.0 · native iOS · your data stays on this device")
                         .font(.system(size: 12))
                         .foregroundColor(.mFaint)
                         .padding(28)
@@ -172,6 +172,7 @@ struct StatsView: View {
         } label: {
             HStack {
                 Image(systemName: "trash")
+                    .frame(width: 20)
                 Text("Reset all data")
                 Spacer()
             }
@@ -185,10 +186,14 @@ struct StatsView: View {
     private func exportRow(_ title: String, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack {
-                Image(systemName: icon).foregroundColor(.mAccent)
+                Image(systemName: icon)
+                    .foregroundColor(.mAccent)
+                    .frame(width: 20)
                 Text(title).foregroundColor(.mText)
                 Spacer()
-                Image(systemName: "chevron.right").foregroundColor(.mFaint)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundColor(.mLine)
             }
             .font(.system(size: 14))
             .padding(.horizontal, 16)

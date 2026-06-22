@@ -68,12 +68,16 @@ struct SettingsTabView: View {
                         tutorial.start()
                     } label: {
                         Label("Replay Tutorial", systemImage: "questionmark.circle")
-                            .font(.system(size: 14))
+                            .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.mAccent)
+                            .padding(.horizontal, 16).padding(.vertical, 9)
+                            .background(Color.mAccent.opacity(0.1))
+                            .cornerRadius(8)
+                            .cardBorder(8)
                     }
                     .padding(.top, 24)
 
-                    Text("Meter v2.4.1 · native iOS · your data stays on this device")
+                    Text("Meter v2.5.0 · native iOS · your data stays on this device")
                         .font(.system(size: 12))
                         .foregroundColor(.mFaint)
                         .padding(.top, 8)
@@ -116,9 +120,11 @@ struct SettingsTabView: View {
                 s.cpm = s.gasPrice / s.mpg
             }
             .font(.system(size: 12, weight: .semibold))
-            .foregroundColor(.white)
+            .foregroundColor(.mAccent)
             .padding(.horizontal, 10).padding(.vertical, 5)
-            .background(Color.mAccent).cornerRadius(6)
+            .background(Color.mAccent.opacity(0.12))
+            .cornerRadius(6)
+            .cardBorder(6)
             .padding(.leading, 10)
         }
         .padding(.horizontal, 16).padding(.vertical, 12)

@@ -86,7 +86,8 @@ struct TutorialOverlay: View {
                 .frame(width: calloutWidth)
                 .background(Color.mElev)
                 .cornerRadius(14)
-                .shadow(color: .black.opacity(0.28), radius: 18, x: 0, y: 4)
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.mLine, lineWidth: 0.5))
+                .shadow(color: .black.opacity(0.35), radius: 20, x: 0, y: 6)
                 .position(x: calloutX, y: calloutY)
         }
     }
@@ -96,7 +97,8 @@ struct TutorialOverlay: View {
             .frame(width: calloutWidth)
             .background(Color.mElev)
             .cornerRadius(14)
-            .shadow(color: .black.opacity(0.28), radius: 18, x: 0, y: 4)
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.mLine, lineWidth: 0.5))
+            .shadow(color: .black.opacity(0.35), radius: 20, x: 0, y: 6)
             .position(x: size.width / 2, y: size.height * 0.46)
     }
 
@@ -147,7 +149,9 @@ struct TutorialOverlay: View {
                         .font(.system(size: 13))
                         .foregroundColor(.mMuted)
                         .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(Color.mSurface).cornerRadius(7)
+                        .background(Color.mSurface)
+                        .cornerRadius(7)
+                        .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.mLine, lineWidth: 0.5))
                 }
 
                 Button {

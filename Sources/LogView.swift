@@ -74,12 +74,14 @@ struct LogView: View {
     private var recentlyDeletedBanner: some View {
         VStack(spacing: 0) {
             HStack {
-                Image(systemName: "trash.circle")
-                    .font(.system(size: 13))
-                    .foregroundColor(.mMuted)
-                Text("Recently Deleted")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(.mMuted)
+                HStack(spacing: 6) {
+                    Image(systemName: "trash.circle")
+                        .font(.system(size: 12))
+                        .foregroundColor(.mFaint)
+                    Text("Recently Deleted")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.mMuted)
+                }
                 Spacer()
                 Button("Clear all") { store.clearRecentlyDeleted() }
                     .font(.system(size: 12))
@@ -108,17 +110,21 @@ struct LogView: View {
                     Button("Recover") { store.recoverOffer(offer) }
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundColor(.mAccent)
-                        .padding(.horizontal, 12).padding(.vertical, 6)
-                        .background(Color.mAccent.opacity(0.1)).cornerRadius(6)
+                        .padding(.horizontal, 10).padding(.vertical, 5)
+                        .background(Color.mAccent.opacity(0.1))
+                        .cornerRadius(6)
+                        .cardBorder(6)
                 }
                 .padding(.horizontal, 16).padding(.vertical, 6)
             }
 
-            Divider()
-                .background(Color.mLine)
+            Color.mLine.frame(height: 1)
                 .padding(.top, 6)
         }
         .background(Color.mSurface)
+        .overlay(alignment: .bottom) {
+            Color.mLine.frame(height: 0.5)
+        }
     }
 
     private var emptyState: some View {
@@ -162,6 +168,7 @@ struct OfferRow: View {
         .padding(12)
         .background(Color.mSurface)
         .cornerRadius(10)
+        .cardBorder()
         .onAppear {
             guard !initialized else { return }
             initialized   = true
@@ -210,14 +217,16 @@ struct OfferRow: View {
                 .font(.system(size: 12))
                 .foregroundColor(.mFaint)
 
-            // Edit button
             Button {
                 onEdit(offer)
             } label: {
                 Image(systemName: "pencil")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.mFaint)
-                    .padding(4)
+                    .padding(6)
+                    .background(Color.mElev)
+                    .cornerRadius(6)
+                    .cardBorder(6)
             }
         }
     }
@@ -257,16 +266,21 @@ struct OfferRow: View {
                     .frame(width: 70, height: 28)
 
             Button("Save") { saveFinalPay() }
-                .font(.system(size: 12))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.mAccent)
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(Color.mAccent.opacity(0.1))
+                .cornerRadius(5)
+                .cardBorder(5)
 
             if let fp = offer.finalPay, let op = offer.pay, fp > op {
                 Text(String(format: "+$%.2f hidden", fp - op))
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.mGreen)
                     .padding(.horizontal, 8).padding(.vertical, 3)
-                    .background(Color.mGreen.opacity(0.12))
-                    .cornerRadius(6)
+                    .background(Color.mGreen.opacity(0.1))
+                    .cornerRadius(5)
+                    .colorBorder(.mGreen, radius: 5, opacity: 0.3)
             }
         }
         .tutorialAnchor("log-final-pay")
@@ -280,13 +294,11 @@ struct OfferRow: View {
 
     // MARK: – Pickup timer
 
-    // 0=nothing  1=driving to restaurant  2=waiting at store
-    // 3=driving to customer  4=done
     private var timerState: Int {
         if offer.deliveredAt != nil || offer.customerDriveMin != nil { return 4 }
         if offer.customerDriveStart != nil { return 3 }
-        if offer.wait != nil { return 4 }                              // legacy records
-        if offer.driveMin != nil && offer.waitStart == nil { return 4 } // legacy
+        if offer.wait != nil { return 4 }
+        if offer.driveMin != nil && offer.waitStart == nil { return 4 }
         if offer.waitStart  != nil { return 2 }
         if offer.driveStart != nil { return 1 }
         return 0
@@ -294,7 +306,7 @@ struct OfferRow: View {
 
     @ViewBuilder
     private var pickupTimerRow: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             switch timerState {
 
             case 0:
@@ -303,19 +315,23 @@ struct OfferRow: View {
                     store.updateOffer(u)
                 } label: {
                     Label("Start drive", systemImage: "car.fill")
-                        .font(.system(size: 12))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.mAccent)
                         .padding(.horizontal, 10).padding(.vertical, 6)
-                        .background(Color.mAccent.opacity(0.1)).cornerRadius(7)
+                        .background(Color.mAccent.opacity(0.1))
+                        .cornerRadius(7)
+                        .cardBorder(7)
                 }
                 Button("Mark done") {
                     var u = offer; u.deliveredAt = Date()
                     store.updateOffer(u)
                 }
                 .font(.system(size: 12))
-                .foregroundColor(.mFaint)
+                .foregroundColor(.mMuted)
                 .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(Color.mElev).cornerRadius(7)
+                .background(Color.mElev)
+                .cornerRadius(7)
+                .cardBorder(7)
 
             case 1:
                 if let ds = offer.driveStart {
@@ -327,10 +343,12 @@ struct OfferRow: View {
                     u.waitStart = Date()
                     store.updateOffer(u)
                 }
-                .font(.system(size: 12))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.mAmber)
                 .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(Color.mAmber.opacity(0.1)).cornerRadius(7)
+                .background(Color.mAmber.opacity(0.1))
+                .cornerRadius(7)
+                .colorBorder(.mAmber, radius: 7, opacity: 0.4)
                 Button("Mark done") {
                     var u = offer
                     if let ds = u.driveStart { u.driveMin = Date().timeIntervalSince(ds) / 60 }
@@ -338,9 +356,11 @@ struct OfferRow: View {
                     store.updateOffer(u)
                 }
                 .font(.system(size: 12))
-                .foregroundColor(.mFaint)
+                .foregroundColor(.mMuted)
                 .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(Color.mElev).cornerRadius(7)
+                .background(Color.mElev)
+                .cornerRadius(7)
+                .cardBorder(7)
 
             case 2:
                 if let dm = offer.driveMin {
@@ -348,6 +368,7 @@ struct OfferRow: View {
                         .font(.system(size: 12)).foregroundColor(.mMuted)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(Color.mElev).cornerRadius(6)
+                        .cardBorder(6)
                 }
                 if let ws = offer.waitStart {
                     LiveTimer(since: ws, prefix: "⏱ ", color: .mOrange)
@@ -358,10 +379,12 @@ struct OfferRow: View {
                     u.customerDriveStart = Date()
                     store.updateOffer(u)
                 }
-                .font(.system(size: 12))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.mGreen)
                 .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(Color.mGreen.opacity(0.1)).cornerRadius(7)
+                .background(Color.mGreen.opacity(0.1))
+                .cornerRadius(7)
+                .colorBorder(.mGreen, radius: 7, opacity: 0.4)
                 Button("Mark done") {
                     var u = offer
                     if let ws = u.waitStart { u.wait = Date().timeIntervalSince(ws) / 60 }
@@ -369,9 +392,11 @@ struct OfferRow: View {
                     store.updateOffer(u)
                 }
                 .font(.system(size: 12))
-                .foregroundColor(.mFaint)
+                .foregroundColor(.mMuted)
                 .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(Color.mElev).cornerRadius(7)
+                .background(Color.mElev)
+                .cornerRadius(7)
+                .cardBorder(7)
 
             case 3:
                 if let dm = offer.driveMin {
@@ -379,6 +404,7 @@ struct OfferRow: View {
                         .font(.system(size: 12)).foregroundColor(.mMuted)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(Color.mElev).cornerRadius(6)
+                        .cardBorder(6)
                 }
                 if let w = offer.wait {
                     let wc: Color = w >= store.settings.slowWait ? .mOrange : .mGreen
@@ -386,6 +412,7 @@ struct OfferRow: View {
                         .font(.system(size: 12)).foregroundColor(wc)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(wc.opacity(0.1)).cornerRadius(6)
+                        .colorBorder(wc, radius: 6, opacity: 0.35)
                 }
                 if let cs = offer.customerDriveStart {
                     LiveTimer(since: cs, prefix: "🚶 ", color: .mAccent)
@@ -398,10 +425,12 @@ struct OfferRow: View {
                     u.deliveredAt = Date()
                     store.updateOffer(u)
                 }
-                .font(.system(size: 12))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.mGreen)
                 .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(Color.mGreen.opacity(0.1)).cornerRadius(7)
+                .background(Color.mGreen.opacity(0.1))
+                .cornerRadius(7)
+                .colorBorder(.mGreen, radius: 7, opacity: 0.4)
 
             default: // 4 = done
                 if let dm = offer.driveMin {
@@ -409,6 +438,7 @@ struct OfferRow: View {
                         .font(.system(size: 12)).foregroundColor(.mMuted)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(Color.mElev).cornerRadius(6)
+                        .cardBorder(6)
                 }
                 if let w = offer.wait {
                     let color: Color = w >= store.settings.slowWait ? .mOrange : .mGreen
@@ -416,12 +446,14 @@ struct OfferRow: View {
                         .font(.system(size: 12)).foregroundColor(color)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(color.opacity(0.1)).cornerRadius(6)
+                        .colorBorder(color, radius: 6, opacity: 0.35)
                 }
                 if let cdm = offer.customerDriveMin {
                     Text(String(format: "🚶 %.1fm", cdm))
                         .font(.system(size: 12)).foregroundColor(.mMuted)
                         .padding(.horizontal, 8).padding(.vertical, 4)
                         .background(Color.mElev).cornerRadius(6)
+                        .cardBorder(6)
                 }
             }
         }
@@ -563,7 +595,7 @@ struct OfferEditSheet: View {
             .padding(.horizontal, 16).padding(.vertical, 12)
 
             if focusedField == focus && !suggestions.isEmpty {
-                Divider().background(Color.mLine)
+                MLine()
                 ForEach(Array(suggestions.enumerated()), id: \.offset) { idx, s in
                     Button {
                         text.wrappedValue = s
@@ -581,7 +613,7 @@ struct OfferEditSheet: View {
                         .padding(.horizontal, 16).padding(.vertical, 9)
                     }
                     if idx < suggestions.count - 1 {
-                        Divider().background(Color.mLine)
+                        MLine()
                     }
                 }
             }

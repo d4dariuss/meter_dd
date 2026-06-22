@@ -158,8 +158,9 @@ struct DecideView: View {
             }
             .foregroundColor(.mAmber)
             .padding(12)
-            .background(Color.mAmber.opacity(0.12))
+            .background(Color.mAmber.opacity(0.1))
             .cornerRadius(8)
+            .colorBorder(.mAmber, radius: 8, opacity: 0.4)
         }
     }
 
@@ -210,6 +211,7 @@ struct DecideView: View {
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
         .background(Color.mElev).cornerRadius(8)
+        .cardBorder(8)
     }
 
     // Pre-accept merchant intel strip
@@ -420,8 +422,9 @@ struct DecideView: View {
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.mAmber.opacity(0.12))
+        .background(Color.mAmber.opacity(0.1))
         .cornerRadius(8)
+        .colorBorder(.mAmber, radius: 8, opacity: 0.4)
     }
 
     // MARK: – Shift clock
@@ -456,8 +459,9 @@ struct DecideView: View {
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(store.activeShift == nil ? .mAccent : .mOrange)
                     .padding(.horizontal, 16).padding(.vertical, 9)
-                    .background((store.activeShift == nil ? Color.mAccent : Color.mOrange).opacity(0.15))
+                    .background((store.activeShift == nil ? Color.mAccent : Color.mOrange).opacity(0.12))
                     .cornerRadius(8)
+                    .colorBorder(store.activeShift == nil ? .mAccent : .mOrange, radius: 8, opacity: 0.5)
 
                     HStack(spacing: 6) {
                         Text("Odo:").font(.system(size: 12)).foregroundColor(.mFaint)
@@ -708,6 +712,7 @@ struct ActiveOrderCard: View {
         .padding(.horizontal, 10).padding(.vertical, 5)
         .background(Color.mGreen.opacity(0.1))
         .cornerRadius(6)
+        .colorBorder(.mGreen, radius: 6, opacity: 0.35)
     }
 
     private func phaseRow(icon: String, color: Color, label: String,
@@ -735,7 +740,7 @@ struct ActiveOrderCard: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 16).padding(.vertical, 10)
                     .background(buttonColor)
-                    .cornerRadius(10)
+                    .cornerRadius(8)
             }
         }
         .padding(16)

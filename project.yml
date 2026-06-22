@@ -15,8 +15,8 @@ targets:
     info:
       path: Info.plist
       properties:
-        CFBundleShortVersionString: "2.4.1"
-        CFBundleVersion: "5"
+        CFBundleShortVersionString: "2.5.0"
+        CFBundleVersion: "6"
         NSLocationWhenInUseUsageDescription: "Meter tracks the miles you drive during a dash so you have a mileage record."
         NSLocationAlwaysAndWhenInUseUsageDescription: "Allow Always so Meter can keep counting miles while you navigate in another app or your screen is off."
         UIBackgroundModes:
@@ -28,6 +28,6 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: NO
         TARGETED_DEVICE_FAMILY: 1
-        MARKETING_VERSION: "2.4.1"
-        CURRENT_PROJECT_VERSION: "5"
+        MARKETING_VERSION: "2.5.0"
+        CURRENT_PROJECT_VERSION: "6"
         SWIFT_VERSION: "5.9"

@@ -22,7 +22,7 @@ struct SpotsView: View {
         NavigationView {
             VStack(spacing: 0) {
                 filterRow
-                Divider().background(Color.mLine)
+                Color.mLine.frame(height: 1)
 
                 if stats.isEmpty {
                     emptyState
@@ -127,17 +127,15 @@ struct SpotRow: View {
                 }
                 Spacer()
 
-                // Wait bar
                 if stat.medWait.isFinite {
                     RoundedRectangle(cornerRadius: 3)
                         .fill(pill.color)
-                        .frame(width: max(6, min(70, stat.medWait * 3)), height: 12)
-                        .padding(.top, 4)
+                        .frame(width: max(6, min(70, stat.medWait * 3)), height: 10)
+                        .padding(.top, 5)
                 }
             }
 
-            // Meta line
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Text("\(stat.accCount) acc")
                     .font(.system(size: 12)).foregroundColor(.mFaint)
                 if stat.decCount > 0 {
@@ -154,12 +152,12 @@ struct SpotRow: View {
                 }
             }
 
-            // Notes row
             noteRow
         }
         .padding(12)
         .background(Color.mSurface)
         .cornerRadius(10)
+        .cardBorder()
         .onAppear { noteText = store.note(for: stat.name) }
     }
 
@@ -179,8 +177,12 @@ struct SpotRow: View {
                     store.setNote(for: stat.name, note: noteText)
                     editingNote = false
                 }
-                .font(.system(size: 12))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.mAccent)
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(Color.mAccent.opacity(0.1))
+                .cornerRadius(5)
+                .cardBorder(5)
             }
             .padding(.top, 4)
         } else {
@@ -202,8 +204,12 @@ struct SpotRow: View {
                 Button(noteText.isEmpty ? "Add" : "Edit") {
                     editingNote = true
                 }
-                .font(.system(size: 12))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.mAccent)
+                .padding(.horizontal, 8).padding(.vertical, 4)
+                .background(Color.mAccent.opacity(0.1))
+                .cornerRadius(5)
+                .cardBorder(5)
             }
             .padding(.top, 4)
         }
