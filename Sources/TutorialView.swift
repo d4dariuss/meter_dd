@@ -20,37 +20,37 @@ private let slides: [TutorialSlide] = [
     TutorialSlide(
         icon: "gauge.high", iconColor: .mGreen,
         title: "Evaluate offers instantly",
-        body:  "Enter the payout, miles, and minutes. The gauge shows $/mi color-coded green → red based on your thresholds. Accept or Decline with one tap — your rolling acceptance rate updates automatically.",
+        body:  "Enter payout, miles, and minutes into the three input cells. The gauge shows $/mi color-coded by your thresholds. Accept and the order appears with a glowing border — track up to 3 at once.",
         tab:   "Decide tab"
     ),
     TutorialSlide(
         icon: "clock.badge.checkmark.fill", iconColor: .mAmber,
         title: "Track your shift",
-        body:  "Clock in when you start dashing and enter your odometer reading. Clock out at the end. That odometer delta is your tax-ready mileage record. The today strip shows your real hourly rate.",
+        body:  "Clock in with your odometer — the shift card glows cyan while you're active. Clock out with the ending reading for a tax-ready mileage delta. The today strip shows your real hourly rate.",
         tab:   "Decide tab"
     ),
     TutorialSlide(
         icon: "car.fill", iconColor: .mAccent,
         title: "Time your pickups",
-        body:  "In the Log tab, tap Start drive when you leave, At store when you arrive, Got food when you pick up. The app tracks how long each restaurant actually takes.",
+        body:  "In the Log tab, tap Start drive when you leave, At store when you arrive, Got food when you pick up. Meter tracks how long each restaurant actually takes so you can avoid slow spots.",
         tab:   "Log tab"
     ),
     TutorialSlide(
         icon: "mappin.circle.fill", iconColor: .mOrange,
         title: "Know your spots",
-        body:  "Restaurants rank by median wait time and update automatically from your pickup timers. Red = slow, green = fast. Filter by lunch, dinner, or late night to compare the same slot.",
+        body:  "Restaurants rank by median wait time, built automatically from your pickup timers. Green = fast, red = slow. Filter by lunch, dinner, or late night to compare the same daypart.",
         tab:   "Spots tab"
     ),
     TutorialSlide(
         icon: "chart.bar.fill", iconColor: .mAccent,
         title: "See your real numbers",
-        body:  "Today vs. all-time earnings, net after gas and wear, active-order $/hr vs. real $/hr based on total shift time. Enter final pay in Log to reveal hidden tips.",
+        body:  "Today vs. all-time earnings, net after mileage costs, active-order $/hr vs. real $/hr across your full shift. Enter final pay in Log to uncover hidden tips.",
         tab:   "Stats tab"
     ),
     TutorialSlide(
         icon: "location.fill", iconColor: .mGreen,
-        title: "GPS mileage (optional)",
-        body:  "Tap Track on the GPS pill for a live mile estimate. Grant 'Always' location access so it keeps running while you navigate in another app. Use your odometer log as the official tax record — GPS is a cross-check.",
+        title: "GPS tracking",
+        body:  "The pulsing status dot on the GPS pill shows tracking is live. Grant 'Always' location so it keeps running while you navigate in another app. Use your odometer log as the official tax record — GPS is a cross-check.",
         tab:   "Decide tab"
     ),
 ]
@@ -142,11 +142,13 @@ private struct SlideCard: View {
             if let tab = slide.tab {
                 Text(tab.uppercased())
                     .font(.system(size: 11, weight: .bold))
+                    .tracking(0.5)
                     .foregroundColor(slide.iconColor)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 5)
-                    .background(slide.iconColor.opacity(0.15))
+                    .background(slide.iconColor.opacity(0.12))
                     .cornerRadius(20)
+                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(slide.iconColor.opacity(0.35), lineWidth: 0.5))
                     .padding(.bottom, 16)
             }
 

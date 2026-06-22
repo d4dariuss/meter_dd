@@ -301,6 +301,38 @@ struct NumericValueField: UIViewRepresentable {
     }
 }
 
+// MARK: – Status indicator (animated pulse dot)
+
+struct StatusIndicator: View {
+    let active: Bool
+    let color: Color
+    var size: CGFloat = 8
+
+    @State private var pulsing = false
+
+    var body: some View {
+        ZStack {
+            if active {
+                Circle()
+                    .stroke(color, lineWidth: 1)
+                    .frame(width: size * (pulsing ? 2.6 : 1.0),
+                           height: size * (pulsing ? 2.6 : 1.0))
+                    .opacity(pulsing ? 0 : 0.55)
+                    .animation(
+                        .easeOut(duration: 1.4).repeatForever(autoreverses: false),
+                        value: pulsing
+                    )
+            }
+            Circle()
+                .fill(active ? color : Color.mFaint.opacity(0.5))
+                .frame(width: size, height: size)
+        }
+        .frame(width: size * 3, height: size * 3)
+        .onAppear   { pulsing = active }
+        .onChange(of: active) { pulsing = $0 }
+    }
+}
+
 // MARK: – GPS pill
 
 struct GpsPill: View {
@@ -309,10 +341,8 @@ struct GpsPill: View {
     private var miles: Double { tracker.meters / 1609.344 }
 
     var body: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(tracker.isTracking ? Color.mGreen : Color.mFaint)
-                .frame(width: 7, height: 7)
+        HStack(spacing: 6) {
+            StatusIndicator(active: tracker.isTracking, color: .mGreen)
             Text(String(format: "GPS %.2f mi", miles))
                 .font(.system(size: 13, weight: .medium))
                 .foregroundColor(.mText)

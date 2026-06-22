@@ -4,13 +4,14 @@ struct DecideView: View {
     @EnvironmentObject var store:   AppState
     @EnvironmentObject var tracker: LocationTracker
 
-    @State private var payStr:   String = ""
-    @State private var miStr:    String = ""
-    @State private var minStr:   String = ""
-    @State private var merchant: String = ""
-    @State private var zone:     String = ""
-    @State private var odoStr:   String = ""
-    @State private var now:      Date   = Date()
+    @State private var payStr:    String = ""
+    @State private var miStr:     String = ""
+    @State private var minStr:    String = ""
+    @State private var merchant:  String = ""
+    @State private var zone:      String = ""
+    @State private var odoStr:    String = ""
+    @State private var now:       Date   = Date()
+    @State private var shiftGlow: Bool   = false
 
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -430,11 +431,16 @@ struct DecideView: View {
     // MARK: – Shift clock
 
     private var shiftClockCard: some View {
-        Card {
+        let isActive = store.activeShift != nil
+        return Card {
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("SHIFT CLOCK")
-                        .font(.system(size: 11, weight: .semibold)).foregroundColor(.mFaint)
+                    HStack(spacing: 6) {
+                        StatusIndicator(active: isActive, color: .mAccent, size: 7)
+                        Text("SHIFT CLOCK")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(isActive ? .mAccent : .mFaint)
+                    }
                     if let start = store.activeShift {
                         Text(fmtDuration(now.timeIntervalSince(start)))
                             .font(.system(size: 26, weight: .bold, design: .monospaced))
@@ -448,7 +454,7 @@ struct DecideView: View {
                 }
                 Spacer()
                 VStack(spacing: 8) {
-                    Button(store.activeShift == nil ? "Clock In" : "Clock Out") {
+                    Button(isActive ? "Clock Out" : "Clock In") {
                         if store.activeShift == nil {
                             store.clockIn(odo: Double(odoStr))
                         } else {
@@ -457,11 +463,11 @@ struct DecideView: View {
                         }
                     }
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(store.activeShift == nil ? .mAccent : .mOrange)
+                    .foregroundColor(isActive ? .mOrange : .mAccent)
                     .padding(.horizontal, 16).padding(.vertical, 9)
-                    .background((store.activeShift == nil ? Color.mAccent : Color.mOrange).opacity(0.12))
+                    .background((isActive ? Color.mOrange : Color.mAccent).opacity(0.12))
                     .cornerRadius(8)
-                    .colorBorder(store.activeShift == nil ? .mAccent : .mOrange, radius: 8, opacity: 0.5)
+                    .colorBorder(isActive ? .mOrange : .mAccent, radius: 8, opacity: 0.5)
 
                     HStack(spacing: 6) {
                         Text("Odo:").font(.system(size: 12)).foregroundColor(.mFaint)
@@ -471,7 +477,25 @@ struct DecideView: View {
                 }
             }
             .padding(16)
+            .onAppear {
+                withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+                    shiftGlow = true
+                }
+            }
         }
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(
+                    isActive ? Color.mAccent.opacity(shiftGlow ? 1.0 : 0.45) : Color.mLine,
+                    lineWidth: isActive ? 1.5 : 0.5
+                )
+                .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: shiftGlow)
+        )
+        .shadow(
+            color: isActive ? Color.mAccent.opacity(shiftGlow ? 0.38 : 0.1) : .clear,
+            radius: isActive ? 14 : 0
+        )
+        .animation(.easeInOut(duration: 0.4), value: isActive)
     }
 
     // MARK: – Today strip
@@ -558,8 +582,9 @@ struct ActiveOrderCard: View {
     @EnvironmentObject var tracker: LocationTracker
     var offer: Offer
 
-    @State private var noteText: String = ""
-    @State private var noteSaved: Bool  = false
+    @State private var noteText:  String = ""
+    @State private var noteSaved: Bool   = false
+    @State private var glowOn:    Bool   = false
 
     // Phase: 0=driving to restaurant  1=waiting at store  2=driving to customer
     private var phase: Int {
@@ -583,9 +608,12 @@ struct ActiveOrderCard: View {
                 // Header
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("ACTIVE ORDER")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.mAccent)
+                        HStack(spacing: 6) {
+                            StatusIndicator(active: true, color: .mAccent, size: 6)
+                            Text("ACTIVE ORDER")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.mAccent)
+                        }
                         HStack(spacing: 8) {
                             if !offer.merchant.isEmpty {
                                 Text(offer.merchant)
@@ -693,6 +721,17 @@ struct ActiveOrderCard: View {
 
                 // Notes for this merchant
                 notesSection
+            }
+        }
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.mAccent.opacity(glowOn ? 1.0 : 0.45), lineWidth: 1.5)
+                .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: glowOn)
+        )
+        .shadow(color: Color.mAccent.opacity(glowOn ? 0.35 : 0.12), radius: glowOn ? 14 : 6)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
+                glowOn = true
             }
         }
     }

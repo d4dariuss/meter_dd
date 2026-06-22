@@ -21,67 +21,67 @@ class TutorialManager: ObservableObject {
         // ── Decide ──────────────────────────────────────────────────────────
         TutorialStep(tab: 0, anchorID: "ar-header",
                      title: "Rolling AR",
-                     body: "Estimated from your last 100 offers. Green means you're Platinum-safe. Red means you're at risk of losing it."),
+                     body: "Estimated from your last 100 offers. Green means you're Platinum-safe. Red means you're at risk — update your current AR in Settings."),
 
         TutorialStep(tab: 0, anchorID: "gauge",
                      title: "Offer grade",
-                     body: "The big number is $/mi. Fill in pay and miles below to see it update live before you decide."),
+                     body: "The big number is $/mi, color-coded by your thresholds. Fill in Pay and Miles below and it updates live before you decide."),
 
         TutorialStep(tab: 0, anchorID: "restaurant-zone",
-                     title: "Restaurant",
-                     body: "Type the name before you accept. After a few pickups, Meter shows that spot's average wait time right here."),
+                     title: "Restaurant & Zone",
+                     body: "Type the restaurant name — Meter autocompletes from your history. After a few pickups, the gauge shows that spot's average wait time above."),
 
         TutorialStep(tab: 0, anchorID: "input-grid",
-                     title: "Enter the offer",
-                     body: "Pay in dollars, miles to pickup. Adding minutes unlocks a NET/HR chip showing your hourly rate."),
+                     title: "Pay · Miles · Mins",
+                     body: "Three tappable input cells. Fill all three to unlock the NET/HR chip showing your projected hourly rate for this offer."),
 
         TutorialStep(tab: 0, anchorID: "accept-decline",
                      title: "Accept or Decline",
-                     body: "Accept starts a 4-leg delivery timer automatically. Decline logs the skip. Both count toward your rolling AR."),
+                     body: "Accept logs the order and shows it above with a glowing cyan border — you can track up to 3 simultaneous orders. Both decisions count toward your rolling AR."),
 
         TutorialStep(tab: 0, anchorID: "missed-row",
                      title: "Missed an offer?",
-                     body: "Tap +dec or +acc to log an offer you saw but couldn't enter in time. Keeps your AR tracking honest."),
+                     body: "Tap +dec or +acc to log an offer you saw but couldn't enter in time. Keeps your AR tracking accurate."),
 
         TutorialStep(tab: 0, anchorID: "shift-clock",
                      title: "Shift clock",
-                     body: "Enter your odometer when you clock in and out. That delta is your official tax mileage record for the day."),
+                     body: "Enter your odometer when you clock in — the card glows cyan while your shift is active. Clock out with the ending odo to capture your tax-ready mileage delta."),
 
         // ── Log ─────────────────────────────────────────────────────────────
         TutorialStep(tab: 1, anchorID: "log-header",
                      title: "Your log",
-                     body: "All offers, newest first. Swipe left to delete — if you do it by accident, a recovery row appears at the top. Tap ✏ to edit any field after delivery."),
+                     body: "All offers, newest first. Swipe left to delete — a recovery row appears at the top if you need it back. Tap the pencil icon to edit any field."),
 
         TutorialStep(tab: 1, anchorID: "log-final-pay",
                      title: "Final pay",
-                     body: "Enter the actual payout from DoorDash. If it's higher than the offer, that's a hidden tip — Stats tracks the totals."),
+                     body: "Enter the actual DoorDash payout after delivery. If it's higher than the offer amount, the difference is a hidden tip — Stats tracks those totals."),
 
         // ── Spots ────────────────────────────────────────────────────────────
         TutorialStep(tab: 2, anchorID: "spots-filter",
                      title: "Filter by daypart",
-                     body: "Some spots are fast at lunch and slow at dinner. Filter here to see wait times for the time of day you're dashing now."),
+                     body: "Some spots are fast at lunch and slow at dinner. Filter to see wait-time rankings for the part of day you're dashing right now."),
 
         TutorialStep(tab: 2, anchorID: "spots-list",
                      title: "Wait rankings",
-                     body: "Green = fast, red = slow. Tap Add to save a note about parking or entry. Notes show in the gauge before you accept next time."),
+                     body: "Green = fast, amber = OK, red = slow. Tap Add to save parking or entry notes. Notes appear on the offer gauge the next time you see that restaurant."),
 
         // ── Stats ────────────────────────────────────────────────────────────
         TutorialStep(tab: 3, anchorID: "stats-scope",
                      title: "Today vs. all time",
-                     body: "Today shows your current shift. All time includes lifetime totals, tax write-off amount, and hidden tip totals."),
+                     body: "Today shows your current shift only. All time shows lifetime totals, your IRS mileage write-off estimate, and total hidden tips uncovered."),
 
         TutorialStep(tab: 3, anchorID: "stats-real-hr",
                      title: "Real $/hr",
-                     body: "Net pay ÷ total shift hours, including dead time between orders. Your honest rate — not just when orders are active."),
+                     body: "Net pay ÷ total shift hours, including idle time between orders. Your honest hourly rate — not just when orders are active."),
 
         // ── Settings ─────────────────────────────────────────────────────────
         TutorialStep(tab: 4, anchorID: "settings-thresholds",
                      title: "Thresholds",
-                     body: "Set your green/OK/floor $/mi targets. These drive every color in the gauge — tune them to match your market."),
+                     body: "Set your green/OK/floor $/mi targets. Every color in the gauge is driven by these — tune them to match your market and car costs."),
 
         TutorialStep(tab: 4, anchorID: "settings-ar",
                      title: "Your current AR",
-                     body: "Find your actual AR under Ratings in the DoorDash app and enter it here. Tap Save when done."),
+                     body: "Find your actual acceptance rate under Ratings in the DoorDash app and enter it here. Tap Save — Meter uses it to calibrate the rolling AR estimate."),
     ]
 
     var currentStep: TutorialStep? {
