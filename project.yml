@@ -11,12 +11,13 @@ targets:
     platform: iOS
     sources:
       - path: Sources
-      - path: Resources
+      - path: Resources/Assets.xcassets
     info:
       path: Info.plist
       properties:
         CFBundleShortVersionString: "2.5.0"
         CFBundleVersion: "6"
+        CFBundleIconName: "AppIcon"
         NSLocationWhenInUseUsageDescription: "Meter tracks the miles you drive during a dash so you have a mileage record."
         NSLocationAlwaysAndWhenInUseUsageDescription: "Allow Always so Meter can keep counting miles while you navigate in another app or your screen is off."
         UIBackgroundModes:
@@ -31,3 +32,4 @@ targets:
         MARKETING_VERSION: "2.5.0"
         CURRENT_PROJECT_VERSION: "6"
         SWIFT_VERSION: "5.9"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
