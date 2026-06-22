@@ -1,8 +1,58 @@
 import SwiftUI
 
+// MARK: – Shift group model
+
+private struct ShiftGroup: Identifiable {
+    let shift: Shift?
+    let offers: [Offer]  // newest first
+    var id: String { shift?.id ?? "unshifted" }
+}
+
+// MARK: – Log view
+
 struct LogView: View {
     @EnvironmentObject var store: AppState
     @State private var editingOffer: Offer? = nil
+
+    // MARK: – Grouping
+
+    private var groupedOffers: [ShiftGroup] {
+        let allOffers = Array(store.offers.reversed())
+        let sortedShifts = store.shifts.sorted { $0.start > $1.start }
+
+        if sortedShifts.isEmpty {
+            return [ShiftGroup(shift: nil, offers: allOffers)]
+        }
+
+        var buckets: [String: [Offer]] = [:]
+        var unshifted: [Offer] = []
+
+        for offer in allOffers {
+            var placed = false
+            for shift in sortedShifts {
+                let end = shift.end ?? Date.distantFuture
+                if offer.ts >= shift.start && offer.ts <= end {
+                    buckets[shift.id, default: []].append(offer)
+                    placed = true
+                    break
+                }
+            }
+            if !placed { unshifted.append(offer) }
+        }
+
+        var result: [ShiftGroup] = []
+        for shift in sortedShifts {
+            if let offers = buckets[shift.id], !offers.isEmpty {
+                result.append(ShiftGroup(shift: shift, offers: offers))
+            }
+        }
+        if !unshifted.isEmpty {
+            result.append(ShiftGroup(shift: nil, offers: unshifted))
+        }
+        return result
+    }
+
+    // MARK: – Body
 
     var body: some View {
         NavigationView {
@@ -17,19 +67,19 @@ struct LogView: View {
                         if store.offers.isEmpty {
                             emptyState
                         } else {
+                            let useGroups = store.shifts.count > 0
                             List {
-                                ForEach(store.offers.reversed()) { offer in
-                                    OfferRow(offer: offer, onEdit: { editingOffer = $0 })
-                                        .listRowBackground(Color.clear)
-                                        .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
-                                        .listRowSeparator(.hidden)
-                                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                            Button(role: .destructive) {
-                                                store.deleteOffer(id: offer.id)
-                                            } label: {
-                                                Label("Delete", systemImage: "trash")
-                                            }
+                                ForEach(groupedOffers) { group in
+                                    Section {
+                                        ForEach(group.offers) { offer in
+                                            offerRowView(offer)
                                         }
+                                    } header: {
+                                        if useGroups {
+                                            shiftHeader(for: group)
+                                        }
+                                    }
+                                    .listSectionSeparator(.hidden)
                                 }
                             }
                             .listStyle(.plain)
@@ -52,6 +102,111 @@ struct LogView: View {
             }
         }
     }
+
+    // MARK: – Row helper
+
+    private func offerRowView(_ offer: Offer) -> some View {
+        OfferRow(offer: offer, onEdit: { editingOffer = $0 })
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+            .listRowSeparator(.hidden)
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                Button(role: .destructive) {
+                    store.deleteOffer(id: offer.id)
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+    }
+
+    // MARK: – Shift header
+
+    @ViewBuilder
+    private func shiftHeader(for group: ShiftGroup) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            if let shift = group.shift {
+                // Title row
+                HStack(spacing: 6) {
+                    Text("SHIFT · \(dayLabel(shift.start))")
+                        .font(.system(size: 11, weight: .medium))
+                        .tracking(0.5)
+                        .foregroundColor(.mFaint)
+                    if shift.end == nil {
+                        HStack(spacing: 4) {
+                            StatusIndicator(active: true, color: .mAccent, size: 5)
+                            Text("ACTIVE")
+                                .font(.system(size: 10, weight: .bold))
+                                .foregroundColor(.mAccent)
+                        }
+                    }
+                    Spacer()
+                    Text("\(group.offers.count) offer\(group.offers.count == 1 ? "" : "s")")
+                        .font(.system(size: 11))
+                        .foregroundColor(.mFaint)
+                }
+
+                // Details row
+                HStack(spacing: 10) {
+                    let endStr = shift.end.map { $0.formatted(date: .omitted, time: .shortened) } ?? "ongoing"
+                    Text("\(shift.start.formatted(date: .omitted, time: .shortened)) – \(endStr)")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundColor(.mText)
+
+                    Spacer()
+
+                    let hrs = (shift.end ?? Date()).timeIntervalSince(shift.start) / 3600
+                    if hrs > 0.05 {
+                        Text(String(format: "%.1f hr", hrs))
+                            .font(.system(size: 12))
+                            .foregroundColor(.mMuted)
+                    }
+
+                    let gross = groupGross(group.offers)
+                    if gross > 0 {
+                        Text(String(format: "$%.2f", gross))
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.mText)
+                    }
+
+                    if let a = shift.odoStart, let b = shift.odoEnd, b > a {
+                        Text(String(format: "%.0f mi", b - a))
+                            .font(.system(size: 12))
+                            .foregroundColor(.mMuted)
+                    }
+                }
+            } else {
+                Text("UNSHIFTED")
+                    .font(.system(size: 11, weight: .medium))
+                    .tracking(0.5)
+                    .foregroundColor(.mFaint)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+        .padding(.bottom, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.mBg)
+        .textCase(nil)
+    }
+
+    // MARK: – Header helpers
+
+    private func dayLabel(_ date: Date) -> String {
+        let cal = Calendar.current
+        if cal.isDateInToday(date)     { return "TODAY" }
+        if cal.isDateInYesterday(date) { return "YESTERDAY" }
+        let fmt = DateFormatter()
+        fmt.dateFormat = "MMM d"
+        return fmt.string(from: date).uppercased()
+    }
+
+    private func groupGross(_ offers: [Offer]) -> Double {
+        offers
+            .filter { $0.decision == "accept" && !$0.missed }
+            .reduce(0.0) { $0 + (($1.finalPay ?? $1.pay) ?? 0) }
+    }
+
+    // MARK: – Autocomplete data (for OfferEditSheet)
 
     private var merchantZoneMap: [String: String] {
         var map: [String: String] = [:]
@@ -126,6 +281,8 @@ struct LogView: View {
             Color.mLine.frame(height: 0.5)
         }
     }
+
+    // MARK: – Empty state
 
     private var emptyState: some View {
         VStack(spacing: 12) {

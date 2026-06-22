@@ -13,6 +13,9 @@ struct DecideView: View {
     @State private var now:       Date   = Date()
     @State private var shiftGlow: Bool   = false
 
+    private enum InputFocus: Hashable { case merchant, zone }
+    @FocusState private var inputFocus: InputFocus?
+
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     // MARK: – Derived values
@@ -51,6 +54,42 @@ struct DecideView: View {
 
     private var todayAgg: AggResult {
         Calculations.agg(offers: store.todayOffers, cpm: store.settings.cpm)
+    }
+
+    // MARK: – Autocomplete helpers
+
+    // Unique zones previously used with a given merchant name
+    private func zonesFor(_ name: String) -> [String] {
+        Array(Set(store.offers
+            .filter { $0.merchant == name && !$0.zone.isEmpty }
+            .map { $0.zone }
+        )).sorted()
+    }
+
+    // Restaurant suggestions: prefix match, with zone context
+    private var merchantSuggestions: [String] {
+        let q = merchant.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return [] }
+        return Array(Set(store.offers.compactMap { o in o.merchant.isEmpty ? nil : o.merchant }))
+            .filter { $0.lowercased().hasPrefix(q) && $0.lowercased() != q }
+            .sorted()
+            .prefix(5)
+            .map { $0 }
+    }
+
+    // Zone suggestions: scoped to the current merchant when one is set
+    private var zoneSuggestions: [String] {
+        let q = zone.trimmingCharacters(in: .whitespaces).lowercased()
+        guard !q.isEmpty else { return [] }
+        let m = merchant.trimmingCharacters(in: .whitespaces)
+        let pool = m.isEmpty
+            ? store.offers
+            : store.offers.filter { $0.merchant.lowercased() == m.lowercased() }
+        return Array(Set(pool.compactMap { o in o.zone.isEmpty ? nil : o.zone }))
+            .filter { $0.lowercased().hasPrefix(q) && $0.lowercased() != q }
+            .sorted()
+            .prefix(5)
+            .map { $0 }
     }
 
     // MARK: – Body
@@ -99,6 +138,7 @@ struct DecideView: View {
             .padding(.horizontal, 16)
         }
         .background(Color.mBg.ignoresSafeArea())
+        .scrollDismissesKeyboard(.immediately)
         .onReceive(ticker) { _ in now = Date() }
     }
 
@@ -287,45 +327,113 @@ struct DecideView: View {
         VStack(spacing: 8) {
             Card {
                 VStack(spacing: 0) {
-                    HStack {
-                        Text("Restaurant")
-                            .font(.system(size: 14)).foregroundColor(.mMuted)
-                            .frame(width: 90, alignment: .leading)
-                        TextField("name", text: $merchant)
-                            .font(.system(size: 15)).foregroundColor(.mText).submitLabel(.done)
-                    }
-                    .padding(.horizontal, 16).padding(.vertical, 11)
+                    // Restaurant field + dropdown
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("Restaurant")
+                                .font(.system(size: 14)).foregroundColor(.mMuted)
+                                .frame(width: 90, alignment: .leading)
+                            TextField("name", text: $merchant)
+                                .font(.system(size: 15)).foregroundColor(.mText)
+                                .submitLabel(.done)
+                                .focused($inputFocus, equals: .merchant)
+                        }
+                        .padding(.horizontal, 16).padding(.vertical, 11)
 
-                    MLine()
-
-                    HStack {
-                        Text("Zone")
-                            .font(.system(size: 14)).foregroundColor(.mMuted)
-                            .frame(width: 90, alignment: .leading)
-                        TextField("area / market", text: $zone)
-                            .font(.system(size: 15)).foregroundColor(.mText).submitLabel(.done)
-                    }
-                    .padding(.horizontal, 16).padding(.vertical, 11)
-                }
-                .tutorialAnchor("restaurant-zone")
-
-                if !store.recentMerchants.isEmpty {
-                    MLine()
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(store.recentMerchants, id: \.self) { m in
-                                Button(m) {
-                                    merchant = m
-                                    if let prev = store.offers.last(where: { $0.merchant == m }) {
-                                        zone = prev.zone
+                        // Merchant autocomplete dropdown
+                        if inputFocus == .merchant && !merchantSuggestions.isEmpty {
+                            MLine()
+                            ForEach(Array(merchantSuggestions.enumerated()), id: \.offset) { idx, name in
+                                let knownZones = zonesFor(name)
+                                Button {
+                                    merchant = name
+                                    // Auto-fill zone only when unambiguous (one zone for this restaurant)
+                                    if knownZones.count == 1 { zone = knownZones[0] }
+                                    inputFocus = nil
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        VStack(alignment: .leading, spacing: 1) {
+                                            Text(name)
+                                                .font(.system(size: 13)).foregroundColor(.mAccent)
+                                                .lineLimit(1)
+                                            if !knownZones.isEmpty {
+                                                Text(knownZones.joined(separator: " · "))
+                                                    .font(.system(size: 11)).foregroundColor(.mFaint)
+                                            }
+                                        }
+                                        Spacer()
+                                        Image(systemName: "arrow.up.left")
+                                            .font(.system(size: 11)).foregroundColor(.mFaint)
                                     }
+                                    .padding(.horizontal, 16).padding(.vertical, 9)
                                 }
-                                .font(.system(size: 12)).foregroundColor(.mAccent)
-                                .padding(.horizontal, 10).padding(.vertical, 5)
-                                .background(Color.mElev).cornerRadius(12)
+                                .buttonStyle(.plain)
+                                if idx < merchantSuggestions.count - 1 { MLine() }
                             }
                         }
-                        .padding(.horizontal, 16).padding(.vertical, 8)
+                    }
+
+                    MLine()
+
+                    // Zone field + dropdown
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack {
+                            Text("Zone")
+                                .font(.system(size: 14)).foregroundColor(.mMuted)
+                                .frame(width: 90, alignment: .leading)
+                            TextField("area / market", text: $zone)
+                                .font(.system(size: 15)).foregroundColor(.mText)
+                                .submitLabel(.done)
+                                .focused($inputFocus, equals: .zone)
+                        }
+                        .padding(.horizontal, 16).padding(.vertical, 11)
+
+                        // Zone autocomplete dropdown (scoped to current merchant when set)
+                        if inputFocus == .zone && !zoneSuggestions.isEmpty {
+                            MLine()
+                            ForEach(Array(zoneSuggestions.enumerated()), id: \.offset) { idx, z in
+                                Button {
+                                    zone = z
+                                    inputFocus = nil
+                                } label: {
+                                    HStack {
+                                        Text(z)
+                                            .font(.system(size: 13)).foregroundColor(.mAccent)
+                                            .lineLimit(1)
+                                        Spacer()
+                                        Image(systemName: "arrow.up.left")
+                                            .font(.system(size: 11)).foregroundColor(.mFaint)
+                                    }
+                                    .padding(.horizontal, 16).padding(.vertical, 9)
+                                }
+                                .buttonStyle(.plain)
+                                if idx < zoneSuggestions.count - 1 { MLine() }
+                            }
+                        }
+                    }
+                    .tutorialAnchor("restaurant-zone")
+
+                    // Recent merchant chips — only when merchant is empty (no dropdown shown)
+                    if merchant.isEmpty && !store.recentMerchants.isEmpty {
+                        MLine()
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach(store.recentMerchants, id: \.self) { m in
+                                    Button(m) {
+                                        merchant = m
+                                        let z = zonesFor(m)
+                                        if z.count == 1 { zone = z[0] }
+                                        else if let prev = store.offers.last(where: { $0.merchant == m }) {
+                                            zone = prev.zone
+                                        }
+                                    }
+                                    .font(.system(size: 12)).foregroundColor(.mAccent)
+                                    .padding(.horizontal, 10).padding(.vertical, 5)
+                                    .background(Color.mElev).cornerRadius(12)
+                                }
+                            }
+                            .padding(.horizontal, 16).padding(.vertical, 8)
+                        }
                     }
                 }
             }

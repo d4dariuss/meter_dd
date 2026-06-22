@@ -32,6 +32,12 @@ struct ContentView: View {
         .onChange(of: tutorial.currentStep?.tab) { tab in
             if let tab = tab { withAnimation { selectedTab = tab } }
         }
+        // Shift glow — always present so animation state is preserved; opacity drives visibility
+        .overlay {
+            ShiftGlowBorder(active: store.activeShift != nil)
+                .allowsHitTesting(false)
+        }
+        // Tutorial renders on top of everything including the glow
         .overlay {
             if tutorial.isActive, let step = tutorial.currentStep {
                 TutorialOverlay(tutorial: tutorial, step: step)
@@ -45,12 +51,38 @@ struct ContentView: View {
             UITabBar.appearance().scrollEdgeAppearance = app
 
             if !hasSeenTutorial {
-                // Brief delay so all views render their anchor frames first
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     tutorial.start()
                     hasSeenTutorial = true
                 }
             }
         }
+    }
+}
+
+// MARK: – Screen-edge shift glow border
+
+private struct ShiftGlowBorder: View {
+    let active: Bool
+
+    @State private var glow = false
+
+    // Uses the private display corner radius so the rect matches the actual device shape.
+    // Falls back to 44 (correct for most modern iPhones) if unavailable.
+    private var screenRadius: CGFloat {
+        (UIScreen.main.value(forKey: "_displayCornerRadius") as? CGFloat) ?? 44
+    }
+
+    var body: some View {
+        let opacity = active ? (glow ? 1.0 : 0.4) : 0.0
+        let shadowR = active ? (glow ? 20.0 : 8.0)  : 0.0
+
+        RoundedRectangle(cornerRadius: screenRadius)
+            .stroke(Color.mAccent.opacity(opacity), lineWidth: 2.5)
+            .shadow(color: Color.mAccent.opacity(active ? (glow ? 0.65 : 0.2) : 0), radius: shadowR)
+            .ignoresSafeArea()
+            .animation(.easeInOut(duration: 0.5), value: active)
+            .animation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true), value: glow)
+            .onAppear { glow = true }
     }
 }
