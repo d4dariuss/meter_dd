@@ -147,3 +147,12 @@ In `LocationTracker.swift`:
 You do **not** need the App Store for personal use; installing on your own phone
 through Xcode is fine. If you ever submit it, background location requires a clear
 user benefit and a short explanation in review, which a dasher mileage tracker has.
+
+---
+
+## Planned features
+
+- **Live destination estimation + speed-limit compare** — a live ETA for the
+  active order leg that adjusts to your current speed, plus a speed-vs-posted-limit
+  readout. Full implementation plan:
+  [`docs/PLAN-destination-estimation.md`](docs/PLAN-destination-estimation.md).
